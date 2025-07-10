@@ -1,0 +1,45 @@
+{
+  "name": "alternativepath-backend",
+  "version": "1.0.0",
+  "description": "Alternative path back-end system",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hirwajeaneric/alternativepath-backend.git"
+  },
+  "keywords": ["express", "typescript", "prisma", "backend"],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hirwajeaneric/alternativepath-backend/issues"
+  },
+  "homepage": "https://github.com/hirwajeaneric/alternativepath-backend#readme",
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "prisma": "^6.10.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.0.6",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
