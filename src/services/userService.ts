@@ -15,6 +15,7 @@ import {
 } from '../utils/errors';
 import { GetUsersQueryData } from '../schemas/userSchema';
 import logger from '../utils/logger';
+import { generateAndSendVerificationCode } from './mail.service';
 
 class UserService {
   private prisma = database.prisma;
@@ -50,6 +51,25 @@ class UserService {
           password: hashedPassword,
         },
       });
+
+      // Send verification email
+      try {
+        const userName = userData.firstName || userData.username;
+        const verificationCode = await generateAndSendVerificationCode(
+          user.email,
+          userName,
+          `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`
+        );
+        
+        logger.info('Verification email sent successfully:', { 
+          userId: user.id, 
+          email: user.email,
+          verificationCode 
+        });
+      } catch (emailError) {
+        logger.error('Failed to send verification email:', emailError);
+        // Don't fail user creation if email fails, but log it
+      }
 
       logger.info('User created successfully:', { userId: user.id, email: user.email });
       return this.toUserResponse(user);

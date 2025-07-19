@@ -82,3 +82,16 @@ export enum ErrorType {
   CONFLICT_ERROR = 'CONFLICT_ERROR',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
 }
+
+// Email verification types
+export interface EmailVerificationData {
+  email: string;
+  code: string;
+  expiresAt: Date;
+}
+
+export interface VerificationResponse {
+  success: boolean;
+  message: string;
+  user?: UserResponse;
+}
