@@ -1,24 +1,78 @@
 import { Router } from 'express';
-import { UserController } from '../controllers/userController';
+import userController from '../controllers/userController';
+import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validation';
+import { 
+  createUserSchema, 
+  updateUserSchema, 
+  loginSchema, 
+  changePasswordSchema, 
+  getUsersQuerySchema, 
+  objectIdSchema 
+} from '../schemas/userSchema';
+import { z } from 'zod';
 
 const router = Router();
 
-// GET /api/users - Get all users
-router.get('/', UserController.getUsers);
+// Public routes
+router.post(
+  '/register',
+  validate({ body: createUserSchema }),
+  userController.createUser
+);
 
-// GET /api/users/:id - Get user by ID
-router.get('/:id', UserController.getUserById);
+router.post(
+  '/login',
+  validate({ body: loginSchema }),
+  userController.loginUser
+);
 
-// POST /api/users - Create new user
-router.post('/', UserController.createUser);
+// Protected routes (require authentication)
+router.use(authenticate);
 
-// PUT /api/users/:id - Update user
-router.put('/:id', UserController.updateUser);
+// Current user routes
+router.get('/me', userController.getCurrentUser);
 
-// DELETE /api/users/:id - Delete user
-router.delete('/:id', UserController.deleteUser);
+router.put(
+  '/me',
+  validate({ body: updateUserSchema }),
+  userController.updateCurrentUser
+);
 
-// GET /api/users/:id/stats - Get user statistics
-router.get('/:id/stats', UserController.getUserStats);
+router.post(
+  '/me/change-password',
+  validate({ body: changePasswordSchema }),
+  userController.changePassword
+);
 
-export default router; 
+router.post('/me/deactivate', userController.deactivateCurrentUser);
+
+// Admin routes (for managing other users)
+router.get(
+  '/',
+  validate({ query: getUsersQuerySchema }),
+  userController.getUsers
+);
+
+router.get(
+  '/:id',
+  validate({ params: z.object({ id: objectIdSchema }) }),
+  userController.getUserById
+);
+
+router.put(
+  '/:id',
+  validate({ 
+    params: z.object({ id: objectIdSchema }),
+    body: updateUserSchema 
+  }),
+  userController.updateUser
+);
+
+router.delete(
+  '/:id',
+  validate({ params: z.object({ id: objectIdSchema }) }),
+  userController.deleteUser
+);
+
+export default router;

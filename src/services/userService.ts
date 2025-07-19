@@ -1,142 +1,303 @@
-import { PrismaClient } from '../generated/prisma';
-import { User, UserRole } from '../types';
-import { AppError } from '../types';
+import bcrypt from 'bcryptjs';
+import { User as PrismaUser } from '@prisma/client';
+import database from '../utils/database';
+import { 
+  CreateUserData, 
+  UpdateUserData, 
+  UserResponse, 
+  LoginData, 
+  PaginatedResponse 
+} from '../types';
+import { 
+  NotFoundError, 
+  ConflictError, 
+  AuthenticationError,
+} from '../utils/errors';
+import { GetUsersQueryData } from '../schemas/userSchema';
+import logger from '../utils/logger';
 
-const prisma = new PrismaClient();
+class UserService {
+  private prisma = database.prisma;
 
-export class UserService {
-  // Get all users with pagination
-  static async getUsers(page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-    
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              posts: true,
-              comments: true
-            }
-          }
+  async createUser(userData: CreateUserData): Promise<UserResponse> {
+    try {
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: userData.email },
+            { username: userData.username }
+          ]
         }
-      }),
-      prisma.user.count()
-    ]);
+      });
 
-    return { users, total };
-  }
+      if (existingUser) {
+        if (existingUser.email === userData.email) {
+          throw new ConflictError('Email already exists');
+        }
+        if (existingUser.username === userData.username) {
+          throw new ConflictError('Username already exists');
+        }
+      }
 
-  // Get user by ID
-  static async getUserById(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        posts: {
-          select: {
-            id: true,
-            title: true,
-            published: true,
-            createdAt: true
-          }
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 12);
+
+      // Create user
+      const user = await this.prisma.user.create({
+        data: {
+          ...userData,
+          password: hashedPassword,
         },
-        comments: {
-          select: {
-            id: true,
-            content: true,
-            createdAt: true
+      });
+
+      logger.info('User created successfully:', { userId: user.id, email: user.email });
+      return this.toUserResponse(user);
+    } catch (error) {
+      logger.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(id: string): Promise<UserResponse> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      return this.toUserResponse(user);
+    } catch (error) {
+      logger.error('Error fetching user by ID:', error);
+      throw error;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<UserResponse> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      return this.toUserResponse(user);
+    } catch (error) {
+      logger.error('Error fetching user by email:', error);
+      throw error;
+    }
+  }
+
+  async getUsers(query: GetUsersQueryData): Promise<PaginatedResponse<UserResponse>> {
+    try {
+      const { page, limit, search, isActive } = query;
+      const skip = (page - 1) * limit;
+
+      // Build where clause
+      const where: any = {};
+      
+      if (search) {
+        where.OR = [
+          { email: { contains: search, mode: 'insensitive' } },
+          { username: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      if (isActive !== undefined) {
+        where.isActive = isActive;
+      }
+
+      // Get users and total count
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.user.count({ where }),
+      ]);
+
+      const userResponses = users.map((user: PrismaUser) => this.toUserResponse(user));
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: userResponses,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
+    } catch (error) {
+      logger.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: string, updateData: UpdateUserData): Promise<UserResponse> {
+    try {
+      // Check if user exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!existingUser) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Check for conflicts if email or username is being updated
+      if (updateData.email || updateData.username) {
+        const conflictUser = await this.prisma.user.findFirst({
+          where: {
+            AND: [
+              { id: { not: id } },
+              {
+                OR: [
+                  updateData.email ? { email: updateData.email } : {},
+                  updateData.username ? { username: updateData.username } : {},
+                ].filter(condition => Object.keys(condition).length > 0)
+              }
+            ]
+          }
+        });
+
+        if (conflictUser) {
+          if (conflictUser.email === updateData.email) {
+            throw new ConflictError('Email already exists');
+          }
+          if (conflictUser.username === updateData.username) {
+            throw new ConflictError('Username already exists');
           }
         }
       }
-    });
 
-    if (!user) {
-      throw new AppError('User not found', 404);
+      // Update user
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+
+      logger.info('User updated successfully:', { userId: id });
+      return this.toUserResponse(updatedUser);
+    } catch (error) {
+      logger.error('Error updating user:', error);
+      throw error;
     }
-
-    return user;
   }
 
-  // Get user by email
-  static async getUserByEmail(email: string) {
-    return await prisma.user.findUnique({
-      where: { email }
-    });
-  }
+  async deleteUser(id: string): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
 
-  // Create new user
-  static async createUser(data: {
-    email: string;
-    name?: string;
-    role?: UserRole;
-  }) {
-    // Check if user already exists
-    const existingUser = await this.getUserByEmail(data.email);
-    if (existingUser) {
-      throw new AppError('User with this email already exists', 400);
-    }
-
-    return await prisma.user.create({
-      data: {
-        email: data.email,
-        name: data.name,
-        role: data.role || UserRole.USER
+      if (!user) {
+        throw new NotFoundError('User not found');
       }
-    });
+
+      await this.prisma.user.delete({
+        where: { id },
+      });
+
+      logger.info('User deleted successfully:', { userId: id });
+    } catch (error) {
+      logger.error('Error deleting user:', error);
+      throw error;
+    }
   }
 
-  // Update user
-  static async updateUser(
-    id: string,
-    data: Partial<{
-      name: string;
-      role: UserRole;
-    }>
-  ) {
-    const user = await this.getUserById(id);
+  async authenticateUser(loginData: LoginData): Promise<{ user: UserResponse; token: string }> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: loginData.email },
+      });
 
-    return await prisma.user.update({
-      where: { id },
-      data
-    });
+      if (!user) {
+        throw new AuthenticationError('Invalid credentials');
+      }
+
+      if (!user.isActive) {
+        throw new AuthenticationError('Account is deactivated');
+      }
+
+      const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
+
+      if (!isPasswordValid) {
+        throw new AuthenticationError('Invalid credentials');
+      }
+
+      // Generate token (import from auth middleware)
+      const { generateToken } = await import('../middleware/auth');
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+      });
+
+      logger.info('User authenticated successfully:', { userId: user.id, email: user.email });
+      
+      return {
+        user: this.toUserResponse(user),
+        token,
+      };
+    } catch (error) {
+      logger.error('Error authenticating user:', error);
+      throw error;
+    }
   }
 
-  // Delete user
-  static async deleteUser(id: string): Promise<void> {
-    const user = await this.getUserById(id);
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
 
-    await prisma.user.delete({
-      where: { id }
-    });
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+      if (!isCurrentPasswordValid) {
+        throw new AuthenticationError('Current password is incorrect');
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+      });
+
+      logger.info('Password changed successfully:', { userId });
+    } catch (error) {
+      logger.error('Error changing password:', error);
+      throw error;
+    }
   }
 
-  // Get user statistics
-  static async getUserStats(id: string) {
-    const user = await this.getUserById(id);
-
-    const [postsCount, commentsCount] = await Promise.all([
-      prisma.post.count({
-        where: { authorId: id }
-      }),
-      prisma.comment.count({
-        where: { authorId: id }
-      })
-    ]);
-
+  private toUserResponse(user: any): UserResponse {
     return {
-      user,
-      stats: {
-        postsCount,
-        commentsCount
-      }
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName || undefined,
+      lastName: user.lastName || undefined,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
-} 
+}
+
+export default new UserService();

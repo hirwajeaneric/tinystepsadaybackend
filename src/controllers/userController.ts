@@ -1,103 +1,171 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserService } from '../services/userService';
-import { successResponse, paginatedResponse } from '../utils';
-import { UserRole } from '../types';
+import userService from '../services/userService';
+import { AuthenticatedRequest, ApiResponse } from '../types';
+import { 
+  GetUsersQueryData     
+} from '../schemas/userSchema';
 
-export class UserController {
-  // Get all users
-  static async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
+class UserController {
+  async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const userData = req.body;
+      const user = await userService.createUser(userData);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+        message: 'User created successfully',
+      };
 
-      const { users, total } = await UserService.getUsers(page, limit);
-
-      res.json(
-        paginatedResponse(users, page, limit, total)
-      );
+      res.status(201).json(response);
     } catch (error) {
       next(error);
     }
   }
 
-  // Get user by ID
-  static async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { id } = req.params;
-      const user = await UserService.getUserById(id);
-
-      res.json(successResponse(user, 'User retrieved successfully'));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Create new user
-  static async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { email, name, role } = req.body;
-
-      // Validate required fields
-      if (!email) {
-        res.status(400).json({
-          success: false,
-          message: 'Email is required'
-        });
-        return;
-      }
-
-      const user = await UserService.createUser({
-        email,
-        name,
-        role: role as UserRole
-      });
-
-      res.status(201).json(
-        successResponse(user, 'User created successfully')
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Update user
-  static async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { name, role } = req.body;
+      const user = await userService.getUserById(id as string);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+      };
 
-      const user = await UserService.updateUser(id, {
-        name,
-        role: role as UserRole
-      });
-
-      res.json(successResponse(user, 'User updated successfully'));
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }
   }
 
-  // Delete user
-  static async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const query: GetUsersQueryData = req.query as unknown as GetUsersQueryData;
+      const result = await userService.getUsers(query);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      await UserService.deleteUser(id);
+      const updateData = req.body;
+      const user = await userService.updateUser(id as string, updateData);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+        message: 'User updated successfully',
+      };
 
-      res.json(successResponse(null, 'User deleted successfully'));
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }
   }
 
-  // Get user statistics
-  static async getUserStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const result = await UserService.getUserStats(id);
+      await userService.deleteUser(id as string);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'User deleted successfully',
+      };
 
-      res.json(successResponse(result, 'User statistics retrieved successfully'));
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }
   }
-} 
+
+  async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const loginData = req.body;
+      const result = await userService.authenticateUser(loginData);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user: result.user,
+          token: result.token,
+        },
+        message: 'Login successful',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = await userService.getUserById(req.user!.userId);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updateData = req.body;
+      const user = await userService.updateUser(req.user!.userId, updateData);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+        message: 'Profile updated successfully',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      await userService.changePassword(req.user!.userId, currentPassword, newPassword);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Password changed successfully',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deactivateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await userService.updateUser(req.user!.userId, { isActive: false });
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Account deactivated successfully',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+export default new UserController();

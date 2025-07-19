@@ -1,82 +1,130 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../types';
-import { errorResponse } from '../utils';
+import { ZodError } from 'zod';
+import { AppError, createErrorFromPrisma } from '../utils/errors';
+import { ErrorResponse } from '../types';
+import logger from '../utils/logger';
+import { Prisma } from '@prisma/client';
 
-export const errorHandler = (
+const handleZodError = (error: ZodError): AppError => {
+  const message = error.issues.map((err: any) => `${err.path.join('.')}: ${err.message}`).join('; ');
+  return new AppError(message, 400, 'VALIDATION_ERROR' as any);
+};
+
+const handlePrismaError = (error: any): AppError => {
+  return createErrorFromPrisma(error);
+};
+
+const handlePrismaValidationError = (_error: any): AppError => {
+  return new AppError('Invalid data provided', 400, 'VALIDATION_ERROR' as any);
+};
+
+const handleJWTError = (): AppError => {
+  return new AppError('Invalid token', 401, 'AUTHENTICATION_ERROR' as any);
+};
+
+const handleJWTExpiredError = (): AppError => {
+  return new AppError('Token expired', 401, 'AUTHENTICATION_ERROR' as any);
+};
+
+const sendErrorDev = (err: AppError, res: Response): void => {
+  const errorResponse: ErrorResponse = {
+    success: false,
+    error: err.message,
+    statusCode: err.statusCode,
+    timestamp: new Date().toISOString(),
+    path: res.req.path,
+    stack: err.stack,
+  } as any;
+
+  res.status(err.statusCode).json(errorResponse);
+};
+
+const sendErrorProd = (err: AppError, res: Response): void => {
+  // Only send operational errors to client in production
+  if (err.isOperational) {
+    const errorResponse: ErrorResponse = {
+      success: false,
+      error: err.message,
+      statusCode: err.statusCode,
+      timestamp: new Date().toISOString(),
+      path: res.req.path,
+    };
+
+    res.status(err.statusCode).json(errorResponse);
+  } else {
+    // Log error and send generic message
+    logger.error('Programming error:', err);
+    
+    const errorResponse: ErrorResponse = {
+      success: false,
+      error: 'Something went wrong',
+      statusCode: 500,
+      timestamp: new Date().toISOString(),
+      path: res.req.path,
+    };
+
+    res.status(500).json(errorResponse);
+  }
+};
+
+export const globalErrorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
-) => {
-  let error = { ...err };
-  error.message = err.message;
+  _next: NextFunction
+): void => {
+  let error = err as AppError;
 
   // Log error
-  console.error('Error:', {
+  logger.error('Error occurred:', {
     message: err.message,
     stack: err.stack,
-    url: req.url,
+    path: req.path,
     method: req.method,
     body: req.body,
     params: req.params,
-    query: req.query
+    query: req.query,
   });
 
-  // Prisma errors
-  if (err.name === 'PrismaClientKnownRequestError') {
-    const message = 'Database operation failed';
-    error = new AppError(message, 400);
+  // Handle specific error types
+  if (err instanceof ZodError) {
+    error = handleZodError(err);
+  } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    error = handlePrismaError(err);
+  } else if (err instanceof Prisma.PrismaClientValidationError) {
+    error = handlePrismaValidationError(err);
+  } else if (err.name === 'JsonWebTokenError') {
+    error = handleJWTError();
+  } else if (err.name === 'TokenExpiredError') {
+    error = handleJWTExpiredError();
+  } else if (!(err instanceof AppError)) {
+    // Convert unknown errors to AppError
+    error = new AppError(
+      'Something went wrong',
+      500,
+      'INTERNAL_SERVER_ERROR' as any,
+      false
+    );
   }
 
-  if (err.name === 'PrismaClientValidationError') {
-    const message = 'Invalid data provided';
-    error = new AppError(message, 400);
+  // Send error response
+if (process.env['NODE_ENV'] === 'development') {
+    sendErrorDev(error, res);
+  } else {
+    sendErrorProd(error, res);
   }
-
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    const message = 'Resource not found';
-    error = new AppError(message, 404);
-  }
-
-  // Mongoose duplicate key
-  if (err.name === 'MongoError' && (err as any).code === 11000) {
-    const message = 'Duplicate field value entered';
-    error = new AppError(message, 400);
-  }
-
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const message = Object.values((err as any).errors)
-      .map((val: any) => val.message)
-      .join(', ');
-    error = new AppError(message, 400);
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token';
-    error = new AppError(message, 401);
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired';
-    error = new AppError(message, 401);
-  }
-
-  // Default error
-  const statusCode = (error as AppError).statusCode || 500;
-  const message = error.message || 'Server Error';
-
-  res.status(statusCode).json(
-    errorResponse(
-      message,
-      process.env.NODE_ENV === 'development' ? err.stack : undefined
-    )
-  );
 };
 
-export const notFound = (req: Request, res: Response, next: NextFunction) => {
-  const error = new AppError(`Route not found - ${req.originalUrl}`, 404);
-  next(error);
-}; 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+export default globalErrorHandler;

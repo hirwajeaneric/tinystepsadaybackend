@@ -1,53 +1,49 @@
 import { Request } from 'express';
 
 // User types
-export interface User {
+export interface CreateUserData {
+  email: string;
+  username: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface UpdateUserData {
+  email?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  isActive?: boolean;
+}
+
+export interface UserResponse {
   id: string;
   email: string;
-  name?: string;
-  role: UserRole;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR'
+export interface LoginData {
+  email: string;
+  password: string;
 }
 
-// Post types
-export interface Post {
-  id: string;
-  title: string;
-  content: string;
-  published: boolean;
-  authorId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  author?: User;
-  comments?: Comment[];
-  tags?: Tag[];
+export interface AuthTokenPayload {
+  userId: string;
+  email: string;
+  username: string;
 }
 
-// Comment types
-export interface Comment {
-  id: string;
-  content: string;
-  authorId: string;
-  postId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  author?: User;
-  post?: Post;
-}
-
-// Tag types
-export interface Tag {
-  id: string;
-  name: string;
-  color?: string;
-  posts?: Post[];
+// Express request extensions
+export interface AuthenticatedRequest extends Request {
+  user?: AuthTokenPayload;
+  body: any;
+  headers: any;
 }
 
 // API Response types
@@ -60,28 +56,29 @@ export interface ApiResponse<T = any> {
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: {
+    total: number;
     page: number;
     limit: number;
-    total: number;
     totalPages: number;
   };
 }
 
-// Request types
-export interface AuthenticatedRequest extends Request {
-  user?: User;
+// Error types
+export interface ErrorResponse {
+  success: false;
+  error: string;
+  message?: string;
+  statusCode: number;
+  timestamp: string;
+  path: string;
 }
 
-// Error types
-export class AppError extends Error {
-  public statusCode: number;
-  public isOperational: boolean;
-
-  constructor(message: string, statusCode: number) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = true;
-
-    Error.captureStackTrace(this, this.constructor);
-  }
-} 
+export enum ErrorType {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
+  NOT_FOUND_ERROR = 'NOT_FOUND_ERROR',
+  CONFLICT_ERROR = 'CONFLICT_ERROR',
+  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
+}

@@ -1,101 +1,135 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { PrismaClient } from './generated/prisma';
-
-// Import routes
-import userRoutes from './routes/userRoutes';
-
-// Import middleware
-import { errorHandler, notFound } from './middleware/errorHandler';
+import { Request, Response, NextFunction } from 'express';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
 
 // Load environment variables
 dotenv.config();
 
-// Initialize Express app
+import database from './utils/database';
+import logger from './utils/logger';
+import routes from './routes';
+import { globalErrorHandler } from './middleware/errorHandler';
+
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env['PORT'] || 3000;
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
+// Security middleware
+app.use(helmet());
 
-// Middleware
-app.use(helmet()); // Security headers
+// CORS configuration
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', process.env.FRONTEND_URL_2 || 'http://localhost:3001  '],
+  origin: process.env['NODE_ENV'] === 'production' 
+    ? process.env['ALLOWED_ORIGINS']?.split(',') || false
+    : true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-  maxAge: 86400,
-  exposedHeaders: ['Content-Range', 'X-Total-Count'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-})); // Enable CORS
-app.use(morgan('combined')); // Logging
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+}));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'Alternative Path Backend is running',
-    timestamp: new Date().toISOString()
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+    error: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req: Request, res: Response) => {
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.url
+    });
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      error: 'RATE_LIMIT_EXCEEDED'
+    });
+  }
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Use of the hpp middleware to prevent HTTP Parameter Pollution
+app.use(hpp());
+
+// Request logging middleware
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  logger.info(`${req.method} ${req.path}`, {
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
   });
+  next();
 });
 
 // API routes
-app.get('/api', (req, res) => {
+app.use('/api', routes);
+
+// Root endpoint
+app.get('/', (_req: Request, res: Response) => {
   res.json({
-    message: 'Alternative Path Backend API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      api: '/api',
-      users: '/api/users'
-    }
+    success: true,
+    message: 'Backend Server API is running',
+    version: process.env['npm_package_version'] || '1.0.0',
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Route handlers
-app.use('/api/users', userRoutes);
-
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
+// Global error handler (must be last)
+app.use(globalErrorHandler);
 
 // Start server
-async function startServer() {
+const startServer = async () => {
   try {
-    // Test database connection
-    await prisma.$connect();
-    console.log('✅ Database connected successfully');
-
-    app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🔗 API endpoint: http://localhost:${PORT}/api`);
-      console.log(`👥 Users API: http://localhost:${PORT}/api/users`);
+    // Connect to database
+    await database.connect();
+    
+    // Start HTTP server
+    const server = app.listen(PORT, () => {
+      logger.info(`Server is running on port ${PORT}`);
+      logger.info(`Environment: ${process.env['NODE_ENV'] || 'development'}`);
+      logger.info(`Health check: http://localhost:${PORT}/api/health`);
     });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down gracefully...`);
+      
+      server.close(async () => {
+        logger.info('HTTP server closed');
+        
+        try {
+          await database.disconnect();
+          logger.info('Database connection closed');
+          process.exit(0);
+        } catch (error) {
+          logger.error('Error during shutdown:', error);
+          process.exit(1);
+        }
+      });
+    };
+
+    // Handle termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server:', error);
     process.exit(1);
   }
-}
+};
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-startServer(); 
+// Start the server
+startServer();
