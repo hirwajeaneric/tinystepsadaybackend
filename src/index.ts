@@ -1,10 +1,6 @@
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { Request, Response, NextFunction } from 'express';
-import hpp from 'hpp';
-import rateLimit from 'express-rate-limit';
+import { Request, Response } from 'express';
 
 // Load environment variables
 dotenv.config();
@@ -12,67 +8,60 @@ dotenv.config();
 import database from './utils/database';
 import logger from './utils/logger';
 import routes from './routes';
+
+// Import middleware
 import { globalErrorHandler } from './middleware/errorHandler';
+import { 
+  securityMiddleware,
+  sanitizeRequest,
+  cspMiddleware,
+  requestSizeLimit,
+  securityHeaders,
+  requestLogger,
+  validateIP,
+  requestTimeout,
+  validateContentType
+} from './middleware/security';
+import {
+  generalRateLimiter, 
+} from './middleware/rateLimit';
 
 const app = express();
 const PORT = process.env['PORT'] || 3000;
 
-// Security middleware
-app.use(helmet());
+// Apply comprehensive security middleware
+app.use(securityMiddleware);
 
-// CORS configuration
-app.use(cors({
-  origin: process.env['NODE_ENV'] === 'production' 
-    ? process.env['ALLOWED_ORIGINS']?.split(',') || false
-    : true,
-  credentials: true,
-}));
+// Apply request size limiting
+app.use(requestSizeLimit('10mb'));
 
-// Rate limiting middleware
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again later.',
-    error: 'RATE_LIMIT_EXCEEDED'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  handler: (req: Request, res: Response) => {
-    logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      url: req.url
-    });
-    res.status(429).json({
-      success: false,
-      message: 'Too many requests from this IP, please try again later.',
-      error: 'RATE_LIMIT_EXCEEDED'
-    });
-  }
-});
+// Apply content type validation
+app.use(validateContentType(['application/json', 'application/x-www-form-urlencoded']));
 
-// Apply rate limiting to all routes
-app.use(limiter);
+// Apply request timeout (30 seconds)
+app.use(requestTimeout(30000));
+
+// Apply IP validation
+app.use(validateIP);
+
+// Apply security headers
+app.use(securityHeaders);
+
+// Apply CSP middleware
+app.use(cspMiddleware);
+
+// Apply request sanitization
+app.use(sanitizeRequest);
+
+// Apply detailed request logging
+app.use(requestLogger);
+
+// Apply general rate limiting
+app.use(generalRateLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Use of the hpp middleware to prevent HTTP Parameter Pollution
-app.use(hpp());
-
-// Request logging middleware
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.path}`, {
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-  });
-  next();
-});
 
 // API routes
 app.use('/api', routes);
