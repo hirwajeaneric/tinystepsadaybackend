@@ -11,6 +11,7 @@ router.get('/health', async (_req: Request, res: Response) => {
   
   const response: ApiResponse = {
     success: true,
+    message: 'Health check completed',
     data: {
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -29,6 +30,7 @@ router.get('/health', async (_req: Request, res: Response) => {
 router.get('/info', (_req: Request, res: Response) => {
   const response: ApiResponse = {
     success: true,
+    message: 'API information retrieved successfully',
     data: {
       name: 'Backend Server API',
       version: process.env['npm_package_version'] || '1.0.0',

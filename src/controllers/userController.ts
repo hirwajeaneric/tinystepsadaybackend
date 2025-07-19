@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import userService from '../services/userService';
-import { AuthenticatedRequest, ApiResponse } from '../types';
+import { AuthenticatedRequest, ApiResponse, UpdateUserData } from '../types';
 import { 
-  GetUsersQueryData     
+  GetUsersQueryData
 } from '../schemas/userSchema';
 
 class UserController {
@@ -30,6 +30,7 @@ class UserController {
       
       const response: ApiResponse = {
         success: true,
+        message: 'User retrieved successfully',
         data: user,
       };
 
@@ -110,6 +111,7 @@ class UserController {
       
       const response: ApiResponse = {
         success: true,
+        message: 'Current user retrieved successfully',
         data: user,
       };
 
@@ -121,7 +123,7 @@ class UserController {
 
   async updateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const updateData = req.body;
+      const updateData: UpdateUserData = req.body;
       const user = await userService.updateUser(req.user!.userId, updateData);
       
       const response: ApiResponse = {
@@ -154,7 +156,8 @@ class UserController {
 
   async deactivateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      await userService.updateUser(req.user!.userId, { isActive: false });
+      const updateData: UpdateUserData = { isActive: false };
+      await userService.updateUser(req.user!.userId, updateData);
       
       const response: ApiResponse = {
         success: true,

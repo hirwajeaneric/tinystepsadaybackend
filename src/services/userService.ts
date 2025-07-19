@@ -150,6 +150,7 @@ class UserService {
 
       return {
         success: true,
+        message: 'Users retrieved successfully',
         data: userResponses,
         pagination: {
           total,
@@ -256,12 +257,20 @@ class UserService {
         throw new AuthenticationError('Invalid credentials');
       }
 
-      // Generate token (import from auth middleware)
-      const { generateToken } = await import('../middleware/auth');
-      const token = generateToken({
+      // Generate token
+      const { TokenUtils } = await import('../utils/security');
+      const { jwtConfig } = await import('../config/security');
+      const token = TokenUtils.generateToken({
         userId: user.id,
         email: user.email,
         username: user.username,
+        role: user.role,
+        sessionId: 'temp-session', // This should be replaced with actual session management
+        type: 'access'
+      }, jwtConfig.secret, {
+        expiresIn: '15m',
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
       });
 
       logger.info('User authenticated successfully:', { userId: user.id, email: user.email });
@@ -313,6 +322,12 @@ class UserService {
       username: user.username,
       firstName: user.firstName || undefined,
       lastName: user.lastName || undefined,
+      avatar: user.avatar || undefined,
+      bio: user.bio || undefined,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      twoFactorEnabled: user.twoFactorEnabled,
+      lastLogin: user.lastLogin || undefined,
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
