@@ -4,31 +4,31 @@ import { rateLimitConfig } from '../config/security';
 import logger from '../utils/logger';
 
 // General API rate limiter
-export const generalRateLimiter = rateLimit({
-  windowMs: rateLimitConfig.general.windowMs,
-  max: rateLimitConfig.general.max,
-  message: {
-    success: false,
-    error: 'RATE_LIMIT_EXCEEDED',
-    message: rateLimitConfig.general.message
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req: Request, res: Response) => {
-    logger.warn('General rate limit exceeded', {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      url: req.url,
-      method: req.method
-    });
+// export const generalRateLimiter = rateLimit({
+//   windowMs: rateLimitConfig.general.windowMs,
+//   max: rateLimitConfig.general.max,
+//   message: {
+//     success: false,
+//     error: 'RATE_LIMIT_EXCEEDED',
+//     message: rateLimitConfig.general.message
+//   },
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   handler: (req: Request, res: Response) => {
+//     logger.warn('General rate limit exceeded', {
+//       ip: req.ip,
+//       userAgent: req.get('User-Agent'),
+//       url: req.url,
+//       method: req.method
+//     });
     
-    res.status(429).json({
-      success: false,
-      error: 'RATE_LIMIT_EXCEEDED',
-      message: rateLimitConfig.general.message
-    });
-  }
-});
+//     res.status(429).json({
+//       success: false,
+//       error: 'RATE_LIMIT_EXCEEDED',
+//       message: rateLimitConfig.general.message
+//     });
+//   }
+// });
 
 // Authentication rate limiter
 export const authRateLimiter = rateLimit({
