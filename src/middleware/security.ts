@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
-import hpp from 'hpp';
 import { corsConfig, helmetConfig } from '../config/security';
 import logger from '../utils/logger';
+import hpp from 'hpp';
 
 /**
  * Security middleware configuration
