@@ -29,6 +29,9 @@ import {
 const app = express();
 const PORT = process.env['PORT'] || 3000;
 
+// Trust proxy configuration for deployment
+app.set('trust proxy', 1);
+
 // Apply comprehensive security middleware
 app.use(securityMiddleware);
 
