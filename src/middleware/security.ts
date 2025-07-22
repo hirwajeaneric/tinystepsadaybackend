@@ -55,9 +55,14 @@ export const sanitizeRequest = (req: Request, _res: Response, next: NextFunction
         req.body = sanitizeObject(req.body);
     }
 
-    // Sanitize query parameters
-    if (req.query) {
-        req.query = sanitizeObject(req.query);
+    // Sanitize query parameters - create a sanitized copy
+    if (req.query && Object.keys(req.query).length > 0) {
+        const sanitizedQuery = sanitizeObject(req.query);
+        // Clear and repopulate the query object
+        Object.keys(req.query).forEach(key => {
+            delete (req.query as any)[key];
+        });
+        Object.assign(req.query, sanitizedQuery);
     }
 
     // Sanitize URL parameters
