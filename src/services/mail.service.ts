@@ -5,10 +5,11 @@ const resend = new Resend(process.env["RESEND_API_KEY"] as string);
 
 // Email template interface
 interface EmailTemplateData {
-  userName: string;
-  userEmail: string;
-  verificationCode: string;
-  verificationUrl?: string;
+    userName: string;
+    userEmail: string;
+    verificationCode: string;
+    verificationUrl?: string;
+    imageUrl: string;
 }
 
 // Embedded email template
@@ -257,7 +258,7 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
     <div class="email-container">
         <!-- Header -->
         <div class="header">
-            <div class="logo">TS</div>
+            <img src="{{imageUrl}}" alt="Tiny Steps A Day Logo" class="logo" style="width: 80px; height: 80px; background-color: #ffffff; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; object-fit: contain;" />
             <h1>Tiny Steps A Day</h1>
             <p>Building habits, one step at a time</p>
         </div>
@@ -285,14 +286,14 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                 If you have any questions, feel free to reach out to our support team.
             </div>
 
-            <div style="text-align: center;">
+            <div style="text-align: center; color: white;">
                 <a href="{{verificationUrl}}" class="button">Verify Email Address</a>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p>© 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>© 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}. If you didn't create an account, please ignore this email.</p>
             
             <div class="social-links">
@@ -307,97 +308,101 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
 
 // Load email template
 const loadEmailTemplate = (): string => {
-  return EMAIL_TEMPLATE;
+    return EMAIL_TEMPLATE;
 };
+
+const clientUrl = process.env["FRONTEND_URL"] as string;
 
 // Process template with data
 const processTemplate = (template: string, data: EmailTemplateData): string => {
-  let processedTemplate = template;
-  
-  // Replace placeholders with actual data
-  processedTemplate = processedTemplate.replace(/{{userName}}/g, data.userName);
-  processedTemplate = processedTemplate.replace(/{{userEmail}}/g, data.userEmail);
-  processedTemplate = processedTemplate.replace(/{{verificationCode}}/g, data.verificationCode);
-  
-  if (data.verificationUrl) {
-    processedTemplate = processedTemplate.replace(/{{verificationUrl}}/g, data.verificationUrl);
-  } else {
-    // Remove the verification URL button if no URL provided
-    processedTemplate = processedTemplate.replace(
-      /<div style="text-align: center;">\s*<a href="{{verificationUrl}}" class="button">Verify Email Address<\/a>\s*<\/div>/g,
-      ""
-    );
-  }
-  
-  return processedTemplate;
+    let processedTemplate = template;
+
+    // Replace placeholders with actual data
+    processedTemplate = processedTemplate.replace(/{{userName}}/g, data.userName);
+    processedTemplate = processedTemplate.replace(/{{userEmail}}/g, data.userEmail);
+    processedTemplate = processedTemplate.replace(/{{verificationCode}}/g, data.verificationCode);
+    processedTemplate = processedTemplate.replace(/{{imageUrl}}/g, data.imageUrl);
+
+    if (data.verificationUrl) {
+        processedTemplate = processedTemplate.replace(/{{verificationUrl}}/g, data.verificationUrl);
+    } else {
+        // Remove the verification URL button if no URL provided
+        processedTemplate = processedTemplate.replace(
+            /<div style="text-align: center;">\s*<a href="{{verificationUrl}}" class="button">Verify Email Address<\/a>\s*<\/div>/g,
+            ""
+        );
+    }
+
+    return processedTemplate;
 };
 
 // Generate verification code
 const generateVerificationCode = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+    return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 export const sendMail = async (to: string, subject: string, html: string) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: "Tiny Steps A Day <hello@tinystepsaday.com>",
-      to: [to],
-      subject: subject,
-      html: html,
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: "Tiny Steps A Day <hello@tinystepsaday.com>",
+            to: [to],
+            subject: subject,
+            html: html,
+        });
 
-    if (error) {
-      logger.error("Resend API error:", error);
-      throw error;
+        if (error) {
+            logger.error("Resend API error:", error);
+            throw error;
+        }
+
+        logger.info("Email sent successfully:", { to, subject });
+        return data;
+    } catch (error) {
+        logger.error("Error sending email:", error);
+        throw error;
     }
-
-    logger.info("Email sent successfully:", { to, subject });
-    return data;
-  } catch (error) {
-    logger.error("Error sending email:", error);
-    throw error;
-  }
 };
 
 // Send verification code email
 export const sendVerificationCode = async (
-  userEmail: string,
-  userName: string,
-  verificationCode: string,
-  verificationUrl?: string
+    userEmail: string,
+    userName: string,
+    verificationCode: string,
+    verificationUrl?: string
 ): Promise<void> => {
-  try {
-    const template = loadEmailTemplate();
-    const templateData: EmailTemplateData = {
-      userName,
-      userEmail,
-      verificationCode,
-      ...(verificationUrl && { verificationUrl }),
-    };
+    try {
+        const template = loadEmailTemplate();
+        const templateData: EmailTemplateData = {
+            userName,
+            userEmail,
+            verificationCode,
+            ...(verificationUrl && { verificationUrl }),
+            imageUrl: `${clientUrl}/tinystepsaday-logo.png`,
+        };
 
-    const processedHtml = processTemplate(template, templateData);
-    const subject = "Verify Your Email - Tiny Steps A Day";
+        const processedHtml = processTemplate(template, templateData);
+        const subject = "Verify Your Email - Tiny Steps A Day";
 
-    await sendMail(userEmail, subject, processedHtml);
-    
-    logger.info("Verification code email sent successfully:", { 
-      userEmail, 
-      userName,
-      verificationCode 
-    });
-  } catch (error) {
-    logger.error("Error sending verification code email:", error);
-    throw error;
-  }
+        await sendMail(userEmail, subject, processedHtml);
+
+        logger.info("Verification code email sent successfully:", {
+            userEmail,
+            userName,
+            verificationCode
+        });
+    } catch (error) {
+        logger.error("Error sending verification code email:", error);
+        throw error;
+    }
 };
 
 // Convenience function to generate and send verification code
 export const generateAndSendVerificationCode = async (
-  userEmail: string,
-  userName: string,
-  verificationUrl?: string
+    userEmail: string,
+    userName: string,
+    verificationUrl?: string
 ): Promise<string> => {
-  const verificationCode = generateVerificationCode();
-  await sendVerificationCode(userEmail, userName, verificationCode, verificationUrl);
-  return verificationCode;
+    const verificationCode = generateVerificationCode();
+    await sendVerificationCode(userEmail, userName, verificationCode, verificationUrl);
+    return verificationCode;
 };
