@@ -336,11 +336,6 @@ const processTemplate = (template: string, data: EmailTemplateData): string => {
     return processedTemplate;
 };
 
-// Generate verification code
-const generateVerificationCode = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
 export const sendMail = async (to: string, subject: string, html: string) => {
     try {
         const { data, error } = await resend.emails.send({
