@@ -15,7 +15,6 @@ import {
   authRateLimiter,
   registrationRateLimiter,
   passwordResetRateLimiter,
-  emailVerificationRateLimiter,
   profileUpdateRateLimiter,
   adminRateLimiter
 } from '../middleware/rateLimit';
