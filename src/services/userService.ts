@@ -12,8 +12,9 @@ import {
   NotFoundError, 
   ConflictError, 
   AuthenticationError,
+  ValidationError,
 } from '../utils/errors';
-import { GetUsersQueryData } from '../schemas/userSchema';
+import { GetUsersQueryData, EmailVerificationData, ResendVerificationData } from '../schemas/userSchema';
 import logger from '../utils/logger';
 import { generateAndSendVerificationCode } from './mail.service';
 
@@ -44,18 +45,24 @@ class UserService {
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 12);
 
+      // Generate verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
       // Create user
       const user = await this.prisma.user.create({
         data: {
           ...userData,
           password: hashedPassword,
+          emailVerificationToken: verificationCode,
+          emailVerificationExpires: verificationExpires,
         },
       });
 
       // Send verification email
       try {
         const userName = userData.firstName || userData.username;
-        const verificationCode = await generateAndSendVerificationCode(
+        await generateAndSendVerificationCode(
           user.email,
           userName,
           `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`
@@ -311,6 +318,102 @@ class UserService {
       logger.info('Password changed successfully:', { userId });
     } catch (error) {
       logger.error('Error changing password:', error);
+      throw error;
+    }
+  }
+
+  async verifyEmail(verificationData: EmailVerificationData): Promise<UserResponse> {
+    try {
+      const { email, verificationCode } = verificationData;
+
+      // Find user by email
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Check if email is already verified
+      if (user.isEmailVerified) {
+        throw new ValidationError('Email is already verified');
+      }
+
+      // Check if verification code matches
+      if (user.emailVerificationToken !== verificationCode) {
+        throw new ValidationError('Invalid verification code');
+      }
+
+      // Check if verification code has expired
+      if (!user.emailVerificationExpires || new Date() > user.emailVerificationExpires) {
+        throw new ValidationError('Verification code has expired');
+      }
+
+      // Update user to verified
+      const updatedUser = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isEmailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpires: null,
+        },
+      });
+
+      logger.info('Email verified successfully:', { userId: user.id, email });
+      return this.toUserResponse(updatedUser);
+    } catch (error) {
+      logger.error('Error verifying email:', error);
+      throw error;
+    }
+  }
+
+  async resendVerificationEmail(resendData: ResendVerificationData): Promise<void> {
+    try {
+      const { email } = resendData;
+
+      // Find user by email
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Check if email is already verified
+      if (user.isEmailVerified) {
+        throw new ValidationError('Email is already verified');
+      }
+
+      // Generate new verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Update user with new verification code
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerificationToken: verificationCode,
+          emailVerificationExpires: verificationExpires,
+        },
+      });
+
+      // Send verification email
+      const userName = user.firstName || user.username;
+      await generateAndSendVerificationCode(
+        user.email,
+        userName,
+        `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`
+      );
+
+      logger.info('Verification email resent successfully:', { 
+        userId: user.id, 
+        email: user.email,
+        verificationCode 
+      });
+    } catch (error) {
+      logger.error('Error resending verification email:', error);
       throw error;
     }
   }

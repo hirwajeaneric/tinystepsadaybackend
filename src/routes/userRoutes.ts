@@ -8,7 +8,9 @@ import {
   loginSchema, 
   changePasswordSchema, 
   getUsersQuerySchema, 
-  objectIdSchema 
+  objectIdSchema,
+  emailVerificationSchema,
+  resendVerificationSchema
 } from '../schemas/userSchema';
 import { z } from 'zod';
 import {
@@ -16,7 +18,8 @@ import {
   registrationRateLimiter,
   passwordResetRateLimiter,
   profileUpdateRateLimiter,
-  adminRateLimiter
+  adminRateLimiter,
+  emailVerificationRateLimiter
 } from '../middleware/rateLimit';
 
 const router = Router();
@@ -34,6 +37,21 @@ router.post(
   authRateLimiter, // 5 auth attempts per 15 minutes
   validate({ body: loginSchema }),
   userController.loginUser
+);
+
+// Email verification routes (public)
+router.post(
+  '/verify-email',
+  emailVerificationRateLimiter, // Rate limit for verification attempts
+  validate({ body: emailVerificationSchema }),
+  userController.verifyEmail
+);
+
+router.post(
+  '/resend-verification',
+  emailVerificationRateLimiter, // Rate limit for resending verification
+  validate({ body: resendVerificationSchema }),
+  userController.resendVerificationEmail
 );
 
 // Protected routes (require authentication)

@@ -169,6 +169,39 @@ class UserController {
       next(error);
     }
   }
+
+  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const verificationData = req.body;
+      const user = await userService.verifyEmail(verificationData);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: user,
+        message: 'Email verified successfully',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resendVerificationEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const resendData = req.body;
+      await userService.resendVerificationEmail(resendData);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Verification email sent successfully',
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new UserController();

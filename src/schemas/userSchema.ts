@@ -84,9 +84,25 @@ export const objectIdSchema = z
   .string()
   .regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId format');
 
+// Email verification schema
+export const emailVerificationSchema = z.object({
+  email: userSchema.shape.email,
+  verificationCode: z
+    .string()
+    .length(6, 'Verification code must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'Verification code must contain only digits'),
+});
+
+// Resend verification email schema
+export const resendVerificationSchema = z.object({
+  email: userSchema.shape.email,
+});
+
 // Validation helper types
 export type CreateUserData = z.infer<typeof createUserSchema>;
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type ChangePasswordData = z.infer<typeof changePasswordSchema>;
 export type GetUsersQueryData = z.infer<typeof getUsersQuerySchema>;
+export type EmailVerificationData = z.infer<typeof emailVerificationSchema>;
+export type ResendVerificationData = z.infer<typeof resendVerificationSchema>;
