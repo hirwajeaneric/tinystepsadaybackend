@@ -400,9 +400,9 @@ export const sendVerificationCode = async (
 export const generateAndSendVerificationCode = async (
     userEmail: string,
     userName: string,
-    verificationUrl?: string
+    verificationUrl: string,
+    verificationCode: string
 ): Promise<string> => {
-    const verificationCode = generateVerificationCode();
     await sendVerificationCode(userEmail, userName, verificationCode, verificationUrl);
-    return verificationCode;
+    return verificationCode as string;
 };

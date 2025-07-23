@@ -404,7 +404,8 @@ class UserService {
       await generateAndSendVerificationCode(
         user.email,
         userName,
-        `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`
+        `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`,
+        verificationCode
       );
 
       logger.info('Verification email resent successfully:', { 
