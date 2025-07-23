@@ -59,7 +59,7 @@ app.use(sanitizeRequest);
 // Apply detailed request logging
 app.use(requestLogger);
 
-// Apply general rate limiting
+// Apply general rate limiting (100 requests per 15 minutes per IP)
 app.use(generalRateLimiter);
 
 // Body parsing middleware
