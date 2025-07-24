@@ -14,6 +14,7 @@ import {
   AuthenticationError,
   ValidationError,
 } from '../utils/errors';
+import { ErrorCode } from '../types/errors';
 import { GetUsersQueryData, EmailVerificationData, ResendVerificationData } from '../schemas/userSchema';
 import logger from '../utils/logger';
 import { generateAndSendVerificationCode } from './mail.service';
@@ -35,10 +36,10 @@ class UserService {
 
       if (existingUser) {
         if (existingUser.email === userData.email) {
-          throw new ConflictError('Email already exists');
+          throw new ConflictError('Email already exists', ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         if (existingUser.username === userData.username) {
-          throw new ConflictError('Username already exists');
+          throw new ConflictError('Username already exists', ErrorCode.USERNAME_ALREADY_EXISTS);
         }
       }
 
@@ -94,7 +95,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       return this.toUserResponse(user);
@@ -111,7 +112,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       return this.toUserResponse(user);
@@ -181,7 +182,7 @@ class UserService {
       });
 
       if (!existingUser) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       // Check for conflicts if email or username is being updated
@@ -202,10 +203,10 @@ class UserService {
 
         if (conflictUser) {
           if (conflictUser.email === updateData.email) {
-            throw new ConflictError('Email already exists');
+            throw new ConflictError('Email already exists', ErrorCode.EMAIL_ALREADY_EXISTS);
           }
           if (conflictUser.username === updateData.username) {
-            throw new ConflictError('Username already exists');
+            throw new ConflictError('Username already exists', ErrorCode.USERNAME_ALREADY_EXISTS);
           }
         }
       }
@@ -231,7 +232,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       await this.prisma.user.delete({
@@ -252,17 +253,17 @@ class UserService {
       });
 
       if (!user) {
-        throw new AuthenticationError('Invalid credentials');
+        throw new AuthenticationError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
       }
 
       if (!user.isActive) {
-        throw new AuthenticationError('Account is deactivated');
+        throw new AuthenticationError('Account is deactivated', ErrorCode.ACCOUNT_DISABLED);
       }
 
       const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
 
       if (!isPasswordValid) {
-        throw new AuthenticationError('Invalid credentials');
+        throw new AuthenticationError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
       }
 
       // Generate token
@@ -300,13 +301,13 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
       if (!isCurrentPasswordValid) {
-        throw new AuthenticationError('Current password is incorrect');
+        throw new AuthenticationError('Current password is incorrect', ErrorCode.INVALID_PASSWORD);
       }
 
       const hashedNewPassword = await bcrypt.hash(newPassword, 12);
@@ -333,22 +334,22 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       // Check if email is already verified
       if (user.isEmailVerified) {
-        throw new ValidationError('Email is already verified');
+        throw new ValidationError('Email is already verified', ErrorCode.EMAIL_ALREADY_EXISTS);
       }
 
       // Check if verification code matches
       if (user.emailVerificationToken !== verificationCode) {
-        throw new ValidationError('Invalid verification code');
+        throw new ValidationError('Invalid verification code', ErrorCode.INVALID_TOKEN_FORMAT);
       }
 
       // Check if verification code has expired
       if (!user.emailVerificationExpires || new Date() > user.emailVerificationExpires) {
-        throw new ValidationError('Verification code has expired');
+        throw new ValidationError('Verification code has expired', ErrorCode.EMAIL_VERIFICATION_EXPIRED);
       }
 
       // Update user to verified
@@ -379,12 +380,12 @@ class UserService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
       // Check if email is already verified
       if (user.isEmailVerified) {
-        throw new ValidationError('Email is already verified');
+        throw new ValidationError('Email is already verified', ErrorCode.EMAIL_ALREADY_EXISTS);
       }
 
       // Generate new verification code
