@@ -2,18 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError, ZodIssue } from 'zod';
 import { 
   ErrorResponse, 
+  AppValidationError
+} from '../types/errors';
+import { 
   AuthenticationError, 
   AuthorizationError, 
   NotFoundError, 
   ConflictError, 
-  RateLimitError, 
   DatabaseError, 
-  EmailError, 
-  TokenError, 
-  SessionError, 
   InternalServerError, 
-  AppValidationError
-} from '../types/errors';
+  ValidationError
+} from '../utils/errors';
 import logger from '../utils/logger';
 
 /**
@@ -36,6 +35,10 @@ export const globalErrorHandler = (
     errorCode = 'VALIDATION_ERROR';
     message = error.message;
     details = error.details;
+  } else if (error instanceof ValidationError) {
+    statusCode = 400;
+    errorCode = error.code || 'VALIDATION_ERROR';
+    message = error.message;
   } else if (error instanceof AuthenticationError) {
     statusCode = 401;
     errorCode = error.code || 'AUTHENTICATION_ERROR';
@@ -52,25 +55,9 @@ export const globalErrorHandler = (
     statusCode = 409;
     errorCode = error.code || 'CONFLICT_ERROR';
     message = error.message;
-  } else if (error instanceof RateLimitError) {
-    statusCode = 429;
-    errorCode = error.code || 'RATE_LIMIT_ERROR';
-    message = error.message;
   } else if (error instanceof DatabaseError) {
     statusCode = 500;
     errorCode = error.code || 'DATABASE_ERROR';
-    message = error.message;
-  } else if (error instanceof EmailError) {
-    statusCode = 500;
-    errorCode = error.code || 'EMAIL_ERROR';
-    message = error.message;
-  } else if (error instanceof TokenError) {
-    statusCode = 401;
-    errorCode = error.code || 'TOKEN_ERROR';
-    message = error.message;
-  } else if (error instanceof SessionError) {
-    statusCode = 401;
-    errorCode = error.code || 'SESSION_ERROR';
     message = error.message;
   } else if (error instanceof ZodError) {
     statusCode = 400;
@@ -83,9 +70,8 @@ export const globalErrorHandler = (
     }));
   } else if (error instanceof InternalServerError) {
     statusCode = error.statusCode;
-    errorCode = error.code || 'APP_ERROR';
+    errorCode = error.code || 'INTERNAL_SERVER_ERROR';
     message = error.message;
-    details = {};
   }
 
   // Log error details
@@ -210,10 +196,6 @@ export const createError = {
   authorization: (message: string, code?: string) => new AuthorizationError(message, code),
   notFound: (message: string, code?: string) => new NotFoundError(message, code),
   conflict: (message: string, code?: string) => new ConflictError(message, code),
-  rateLimit: (message: string, code?: string) => new RateLimitError(message, code),
   database: (message: string, code?: string) => new DatabaseError(message, code),
-  email: (message: string, code?: string) => new EmailError(message, code),
-  token: (message: string, code?: string) => new TokenError(message, code),
-  session: (message: string, code?: string) => new SessionError(message, code),
   internal: (message?: string) => new InternalServerError(message)
 };

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { validationConfig, passwordConfig } from '../config/security';
-import { AuthenticationError } from '../types/errors';
+import { AuthenticationError } from './errors';
 import { ValidationResult } from '../types/auth';
 
 // Password Utilities

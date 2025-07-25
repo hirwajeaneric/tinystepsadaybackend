@@ -253,7 +253,7 @@ class UserService {
       });
 
       if (!user) {
-        throw new AuthenticationError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+        throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
       }
 
       if (!user.isActive) {
@@ -263,7 +263,7 @@ class UserService {
       const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
 
       if (!isPasswordValid) {
-        throw new AuthenticationError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+        throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
       }
 
       // Generate token

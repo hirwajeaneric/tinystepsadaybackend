@@ -37,7 +37,7 @@ export class DatabaseError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication failed', code?: string) {
+  constructor(message: string, code?: string) {
     super(message, 401, ErrorType.AUTHENTICATION_ERROR, code);
   }
 }
