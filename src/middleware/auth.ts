@@ -10,7 +10,7 @@ import {
 import {
   AuthenticationError,
   TokenError
-} from '../types/errors';
+} from '../utils/errors';
 import logger from '../utils/logger';
 import database from '../utils/database';
 
@@ -38,11 +38,7 @@ const extractToken = (req: Request): string | undefined | null => {
  */
 const verifyToken = (token: string): AccessTokenPayload => {
   try {
-    const payload = jwt.verify(token, jwtConfig.secret, {
-      algorithms: ['HS256'],
-      issuer: jwtConfig.issuer,
-      audience: jwtConfig.audience
-    }) as TokenPayload;
+    const payload = jwt.verify(token, jwtConfig.secret) as TokenPayload;
 
     // Verify token type
     if (payload.type !== 'access') {

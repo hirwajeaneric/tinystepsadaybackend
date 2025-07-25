@@ -66,6 +66,12 @@ export class InternalServerError extends AppError {
   }
 }
 
+export class TokenError extends AppError {
+  constructor(message: string = 'Token error', code?: string) {
+    super(message, 401, ErrorType.AUTHENTICATION_ERROR, code);
+  }
+}
+
 export const createErrorFromPrisma = (error: any): AppError => {
   if (error.code === 'P2002') {
     return new ConflictError('Resource already exists', 'EMAIL_ALREADY_EXISTS');

@@ -246,7 +246,7 @@ class UserService {
     }
   }
 
-  async authenticateUser(loginData: LoginData): Promise<{ user: UserResponse; token: string }> {
+  async authenticateUser(loginData: LoginData): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: loginData.email },
@@ -266,6 +266,28 @@ class UserService {
         throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
       }
 
+      // Generate a secure refresh token
+      const { CryptoUtils } = await import('../utils/security');
+      const refreshToken = CryptoUtils.randomString(64);
+
+      // Update last login and create a new session
+      const [, session] = await Promise.all([
+        this.prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        }),
+        this.prisma.userSession.create({
+          data: {
+            userId: user.id,
+            refreshToken: refreshToken,
+            deviceInfo: 'Web Browser', // TODO: Extract from request
+            ipAddress: '127.0.0.1', // TODO: Extract from request
+            userAgent: 'Unknown', // TODO: Extract from request
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          },
+        })
+      ]);
+
       // Generate token
       const { TokenUtils } = await import('../utils/security');
       const { jwtConfig } = await import('../config/security');
@@ -274,7 +296,7 @@ class UserService {
         email: user.email,
         username: user.username,
         role: user.role,
-        sessionId: 'temp-session', // This should be replaced with actual session management
+        sessionId: session.id,
         type: 'access'
       }, jwtConfig.secret, {
         expiresIn: '15m',
@@ -287,6 +309,8 @@ class UserService {
       return {
         user: this.toUserResponse(user),
         token,
+        refreshToken,
+        expiresIn: 15 * 60 // 15 minutes in seconds
       };
     } catch (error) {
       logger.error('Error authenticating user:', error);
