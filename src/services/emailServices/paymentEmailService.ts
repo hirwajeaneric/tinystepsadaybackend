@@ -52,6 +52,18 @@ interface SubscriptionCancelledEmailData extends BaseEmailTemplateData {
 
 // Payment Email Functions
 
+/**
+ * Sends a payment success email to the user.
+ *
+ * @param userEmail - The email address of the user to send the payment success email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param transactionId - The ID of the transaction.
+ * @param amount - The amount of the transaction.
+ * @param paymentMethod - The method of payment used.
+ * @param description - The description of the transaction.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendPaymentSuccessEmail = async (
   userEmail: string,
   userName: string,
@@ -89,6 +101,18 @@ export const generateAndSendPaymentSuccessEmail = async (
   }
 };
 
+/**
+ * Sends a payment failed email to the user.
+ *
+ * @param userEmail - The email address of the user to send the payment failed email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param transactionId - The ID of the transaction.
+ * @param amount - The amount of the transaction.
+ * @param paymentMethod - The method of payment used.
+ * @param errorMessage - The error message from the payment.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendPaymentFailedEmail = async (
   userEmail: string,
   userName: string,
@@ -126,6 +150,18 @@ export const generateAndSendPaymentFailedEmail = async (
   }
 };
 
+/**
+ * Sends a subscription renewal email to the user.
+ *
+ * @param userEmail - The email address of the user to send the subscription renewal email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param planName - The name of the plan.
+ * @param amount - The amount of the subscription.
+ * @param renewalDate - The date the subscription renews.
+ * @param paymentMethod - The method of payment used.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendSubscriptionRenewalEmail = async (
   userEmail: string,
   userName: string,
@@ -162,6 +198,18 @@ export const generateAndSendSubscriptionRenewalEmail = async (
   }
 };
 
+/**
+ * Sends a subscription cancelled email to the user.
+ *
+ * @param userEmail - The email address of the user to send the subscription cancelled email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param planName - The name of the plan.
+ * @param cancellationDate - The date the subscription was cancelled.
+ * @param accessUntil - The date the subscription will continue until.
+ * @param reason - The reason the subscription was cancelled.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendSubscriptionCancelledEmail = async (
   userEmail: string,
   userName: string,

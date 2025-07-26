@@ -38,6 +38,11 @@ import {
 class UserService {
   private prisma = database.prisma;
 
+  /**
+   * Create user
+   * @param userData - The data for the user creation.
+   * @returns The created user.
+   */
   async createUser(userData: CreateUserData): Promise<UserResponse> {
     try {
       // Check if user already exists
@@ -120,6 +125,11 @@ class UserService {
     }
   }
 
+  /**
+   * Get user by ID
+   * @param id - The ID of the user to get.
+   * @returns The user.
+   */
   async getUserById(id: string): Promise<UserResponse> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -137,6 +147,11 @@ class UserService {
     }
   }
 
+  /**
+   * Get user by email
+   * @param email - The email of the user to get.
+   * @returns The user.
+   */
   async getUserByEmail(email: string): Promise<UserResponse> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -154,6 +169,11 @@ class UserService {
     }
   }
 
+  /**
+   * Get users
+   * @param query - The query for the users.
+   * @returns The users.
+   */
   async getUsers(query: GetUsersQueryData): Promise<PaginatedResponse<UserResponse>> {
     try {
       const { page, limit, search, isActive, isEmailVerified, role, sortBy, sortOrder } = query;
@@ -235,6 +255,12 @@ class UserService {
     }
   }
 
+  /**
+   * Update user
+   * @param id - The ID of the user to update.
+   * @param updateData - The data for the user update.
+   * @returns The updated user.
+   */
   async updateUser(id: string, updateData: UpdateUserData): Promise<UserResponse> {
     try {
       // Check if user exists
@@ -286,6 +312,11 @@ class UserService {
     }
   }
 
+  /**
+   * Delete user
+   * @param id - The ID of the user to delete.
+   * @returns A Promise that resolves when the operation is complete.
+   */
   async deleteUser(id: string): Promise<void> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -307,6 +338,14 @@ class UserService {
     }
   }
 
+  /**
+   * Authenticate user
+   * @param loginData - The data for the user login.
+   * @param userIpAddress - The IP address of the user.
+   * @param userAgent - The user agent of the user.
+   * @param userDeviceInfo - The device information of the user.
+   * @returns The authenticated user.
+   */
   async  authenticateUser(loginData: LoginData, userIpAddress: string, userAgent: string | undefined, userDeviceInfo: string | undefined): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -395,6 +434,13 @@ class UserService {
     }
   }
 
+  /**
+   * Change password
+   * @param userId - The ID of the user to change the password of.
+   * @param currentPassword - The current password of the user.
+   * @param newPassword - The new password of the user.
+   * @returns A Promise that resolves when the operation is complete.
+   */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     try {
       const user = await this.prisma.user.findUnique({
@@ -449,6 +495,11 @@ class UserService {
     }
   }
 
+  /**
+   * Verify email
+   * @param verificationData - The data for the email verification operation.
+   * @returns The updated user.
+   */
   async verifyEmail(verificationData: EmailVerificationData): Promise<UserResponse> {
     try {
       const { email, verificationCode } = verificationData;
@@ -496,6 +547,11 @@ class UserService {
     }
   }
 
+  /**
+   * Resend verification email
+   * @param resendData - The data for the resend verification email operation.
+   * @returns A Promise that resolves when the operation is complete.
+   */
   async resendVerificationEmail(resendData: ResendVerificationData): Promise<void> {
     try {
       const { email } = resendData;
@@ -547,7 +603,10 @@ class UserService {
   }
 
   /**
-   * Change user role (Admin functionality)
+   * Change user role
+   * @param userId - The ID of the user to change the role of.
+   * @param roleData - The data for the role change.
+   * @returns The updated user.
    */
   async changeUserRole(userId: string, roleData: ChangeUserRoleData): Promise<UserResponse> {
     try {
@@ -615,7 +674,10 @@ class UserService {
   }
 
   /**
-   * Toggle account activation/deactivation (Admin functionality)
+   * Toggle account activation/deactivation
+   * @param userId - The ID of the user to toggle the account status of.
+   * @param statusData - The data for the account status toggle.
+   * @returns The updated user.
    */
   async toggleAccountStatus(userId: string, statusData: ToggleAccountStatusData): Promise<UserResponse> {
     try {
@@ -684,7 +746,9 @@ class UserService {
   }
 
   /**
-   * Bulk user operations (Admin functionality)
+   * Bulk user operations
+   * @param operationData - The data for the bulk user operation.
+   * @returns The affected count and affected user IDs.
    */
   async bulkUserOperation(operationData: BulkUserOperationData): Promise<{ affectedCount: number; affectedUserIds: string[] }> {
     try {
@@ -757,7 +821,9 @@ class UserService {
   }
 
   /**
-   * Get user by ID with role information (for admin checks)
+   * Get user by ID with role information
+   * @param userId - The ID of the user to get the role information for.
+   * @returns The user with role information.
    */
   async getUserByIdWithRole(userId: string): Promise<{ id: string; role: string; email: string; username: string; isActive?: boolean }> {
     try {
@@ -778,7 +844,9 @@ class UserService {
   }
 
   /**
-   * Forgot password - send reset token via email
+   * Forgot password
+   * @param forgotPasswordData - The data for the forgot password operation.
+   * @returns A Promise that resolves when the operation is complete.
    */
   async forgotPassword(forgotPasswordData: ForgotPasswordData): Promise<void> {
     try {
@@ -838,7 +906,9 @@ class UserService {
   }
 
   /**
-   * Reset password with token
+   * Reset password
+   * @param resetPasswordData - The data for the reset password operation.
+   * @returns A Promise that resolves when the operation is complete.
    */
   async resetPassword(resetPasswordData: ResetPasswordData): Promise<void> {
     try {
@@ -897,6 +967,11 @@ class UserService {
 
   /**
    * Send password reset email
+   * @param email - The email address of the user to send the password reset email to.
+   * @param userName - The name of the user to personalize the email.
+   * @param resetToken - The reset token to be included in the email for the user to reset their password.
+   * @returns A Promise that resolves when the email is sent successfully.
+   * @throws Will throw an error if sending the email fails.
    */
   private async sendPasswordResetEmail(email: string, userName: string, resetToken: string): Promise<void> {
     try {
@@ -916,6 +991,9 @@ class UserService {
 
   /**
    * Refresh access token using refresh token
+   * @param refreshTokenData - The data for the refresh access token operation.
+   * @returns The new access token and refresh token.
+   * @throws Will throw an error if the refresh token is invalid or expired.
    */
   async refreshAccessToken(refreshTokenData: RefreshTokenData): Promise<{ token: string; refreshToken: string; expiresIn: number }> {
     try {
@@ -997,6 +1075,11 @@ class UserService {
     }
   }
 
+  /**
+   * Convert user to user response
+   * @param user - The user to convert.
+   * @returns The user response.
+   */
   private toUserResponse(user: any): UserResponse {
     return {
       id: user.id,

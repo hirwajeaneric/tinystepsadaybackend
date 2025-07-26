@@ -49,6 +49,19 @@ interface ProfileUpdatedEmailData extends BaseEmailTemplateData {
 
 // User Management Email Functions
 
+/**
+ * Sends an email to the user to notify them that their role has been changed.
+ *
+ * @param userEmail - The email address of the user to send the role changed email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param oldRole - The previous role of the user.
+ * @param newRole - The new role of the user.
+ * @param changedBy - The user who changed the role.
+ * @param changeTime - The time the role was changed.
+ * @param reason - The reason the role was changed.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendRoleChangedEmail = async (
   userEmail: string,
   userName: string,
@@ -88,6 +101,20 @@ export const generateAndSendRoleChangedEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to notify them that their account status has been changed.
+ *
+ * @param userEmail - The email address of the user to send the account status changed email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param previousStatus - The previous status of the user.
+ * @param newStatus - The new status of the user.
+ * @param changedBy - The user who changed the status.
+ * @param changeTime - The time the status was changed.
+ * @param reason - The reason the status was changed.
+ * @param isActive - Whether the account is active.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendAccountStatusChangedEmail = async (
   userEmail: string,
   userName: string,
@@ -132,6 +159,14 @@ export const generateAndSendAccountStatusChangedEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to welcome them to the platform.
+ *
+ * @param userEmail - The email address of the user to send the welcome email to.
+ * @param userName - The name of the user to personalize the email.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendWelcomeEmail = async (
   userEmail: string,
   userName: string
@@ -159,6 +194,15 @@ export const generateAndSendWelcomeEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to notify them that their profile has been updated.
+ *
+ * @param userEmail - The email address of the user to send the profile updated email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param changes - The changes that were made to the profile.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendProfileUpdatedEmail = async (
   userEmail: string,
   userName: string,

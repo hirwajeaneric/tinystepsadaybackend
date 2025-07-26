@@ -53,6 +53,18 @@ interface ChallengeNotificationEmailData extends BaseEmailTemplateData {
 
 // Notification Email Functions
 
+/**
+ * Sends a general notification email to the user.
+ *
+ * @param userEmail - The email address of the user to send the general notification email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param title - The title of the notification.
+ * @param message - The message of the notification.
+ * @param actionUrl - The URL to take action on the notification.
+ * @param actionText - The text of the action button.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendGeneralNotification = async (
   userEmail: string,
   userName: string,
@@ -89,6 +101,17 @@ export const generateAndSendGeneralNotification = async (
   }
 };
 
+/**
+ * Sends an achievement notification email to the user.
+ *
+ * @param userEmail - The email address of the user to send the achievement notification email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param achievementName - The name of the achievement.
+ * @param achievementDescription - The description of the achievement.
+ * @param pointsEarned - The number of points earned for the achievement.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendAchievementNotification = async (
   userEmail: string,
   userName: string,
@@ -124,6 +147,18 @@ export const generateAndSendAchievementNotification = async (
   }
 };
 
+/**
+ * Sends a reminder notification email to the user.
+ *
+ * @param userEmail - The email address of the user to send the reminder notification email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param reminderTitle - The title of the reminder.
+ * @param reminderMessage - The message of the reminder.
+ * @param dueDate - The date the reminder is due.
+ * @param priority - The priority of the reminder.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendReminderNotification = async (
   userEmail: string,
   userName: string,
@@ -160,6 +195,21 @@ export const generateAndSendReminderNotification = async (
   }
 };
 
+/**
+ * Sends a challenge notification email to the user.
+ *
+ * @param userEmail - The email address of the user to send the challenge notification email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param challengeName - The name of the challenge.
+ * @param challengeDescription - The description of the challenge.
+ * @param duration - The duration of the challenge.
+ * @param participants - The number of participants in the challenge.
+ * @param reward - The reward for the challenge.
+ * @param startDate - The start date of the challenge.
+ * @param endDate - The end date of the challenge.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendChallengeNotification = async (
   userEmail: string,
   userName: string,

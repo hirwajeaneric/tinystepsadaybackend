@@ -43,6 +43,15 @@ import logger from '../../utils/logger';
 
 // Authentication Email Functions
 
+/**
+ * Sends an email to the user with a verification code to verify their email address.
+ *
+ * @param userEmail - The email address of the user to send the verification email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param verificationCode - The verification code to be included in the email for the user to verify their account.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendVerificationEmail = async (
   userEmail: string,
   userName: string,
@@ -72,6 +81,15 @@ export const generateAndSendVerificationEmail = async (
   }
 };
 
+/**
+ * Sends a password reset email to the user.
+ *
+ * @param userEmail - The email address of the user to send the password reset email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param resetToken - The reset token to be included in the email for the user to reset their password.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendPasswordResetEmail = async (
   userEmail: string,
   userName: string,
@@ -103,6 +121,17 @@ export const generateAndSendPasswordResetEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to notify them that their password has been changed.
+ *
+ * @param userEmail - The email address of the user to send the password changed email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param changeTime - The time the password was changed.
+ * @param ipAddress - The IP address the change was made from.
+ * @param deviceInfo - The device information the change was made from.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendPasswordChangedEmail = async (
   userEmail: string,
   userName: string,
@@ -136,6 +165,14 @@ export const generateAndSendPasswordChangedEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to notify them that their account has been activated.
+ *
+ * @param userEmail - The email address of the user to send the account activated email to.
+ * @param userName - The name of the user to personalize the email.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendAccountActivatedEmail = async (
   userEmail: string,
   userName: string
@@ -163,6 +200,17 @@ export const generateAndSendAccountActivatedEmail = async (
   }
 };
 
+/**
+ * Sends an email to the user to notify them that their account has been deactivated.
+ *
+ * @param userEmail - The email address of the user to send the account deactivated email to.
+ * @param userName - The name of the user to personalize the email.
+ * @param deactivationTime - The time the account was deactivated.
+ * @param reason - The reason the account was deactivated.
+ * @param requestedBy - The user who requested the deactivation.
+ * @returns A Promise that resolves when the email is sent successfully.
+ * @throws Will throw an error if sending the email fails.
+ */
 export const generateAndSendAccountDeactivatedEmail = async (
   userEmail: string,
   userName: string,
