@@ -83,6 +83,44 @@ export const resendVerificationSchema = z.object({
   email: userSchema.shape.email,
 });
 
+// Role management schema
+export const changeUserRoleSchema = z.object({
+  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN']),
+  reason: z.string().max(500, 'Reason must be less than 500 characters').optional()
+});
+
+// Account activation/deactivation schema
+export const toggleAccountStatusSchema = z.object({
+  isActive: z.boolean(),
+  reason: z.string().max(500, 'Reason must be less than 500 characters').optional()
+});
+
+// Bulk operations schema
+export const bulkUserOperationSchema = z.object({
+  userIds: z.array(z.string().min(1, 'User ID is required')).min(1, 'At least one user ID is required').max(50, 'Maximum 50 users per operation'),
+  operation: z.enum(['activate', 'deactivate', 'change_role', 'delete']),
+  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+  reason: z.string().max(500, 'Reason must be less than 500 characters').optional()
+});
+
+// User search and filter schema
+export const userSearchSchema = z.object({
+  search: z.string().max(100, 'Search term must be less than 100 characters').optional(),
+  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+  isActive: z.coerce.boolean().optional(),
+  isEmailVerified: z.coerce.boolean().optional(),
+  createdAfter: z.string().datetime().optional(),
+  createdBefore: z.string().datetime().optional(),
+  lastLoginAfter: z.string().datetime().optional(),
+  lastLoginBefore: z.string().datetime().optional()
+});
+
+// Account deactivation schema (requires password verification)
+export const deactivateAccountSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
+  reason: z.string().max(500, 'Reason must be less than 500 characters').optional()
+});
+
 // Validation helper types
 export type CreateUserData = z.infer<typeof createUserSchema>;
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
@@ -91,3 +129,8 @@ export type ChangePasswordData = z.infer<typeof changePasswordSchema>;
 export type GetUsersQueryData = z.infer<typeof getUsersQuerySchema>;
 export type EmailVerificationData = z.infer<typeof emailVerificationSchema>;
 export type ResendVerificationData = z.infer<typeof resendVerificationSchema>;
+export type ChangeUserRoleData = z.infer<typeof changeUserRoleSchema>;
+export type ToggleAccountStatusData = z.infer<typeof toggleAccountStatusSchema>;
+export type BulkUserOperationData = z.infer<typeof bulkUserOperationSchema>;
+export type UserSearchData = z.infer<typeof userSearchSchema>;
+export type DeactivateAccountData = z.infer<typeof deactivateAccountSchema>;

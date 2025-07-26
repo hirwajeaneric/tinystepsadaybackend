@@ -27,11 +27,15 @@ This application implements a clean and simple Role-Based Access Control (RBAC) 
    - Can manage users and system settings
    - Can view analytics
    - Can delete users
+   - Can change user roles (except SUPER_ADMIN)
+   - Can activate/deactivate accounts (except SUPER_ADMIN)
+   - Can perform bulk operations (except on SUPER_ADMIN)
    - Inherits all INSTRUCTOR permissions
 
 5. **SUPER_ADMIN** (Level 5)
    - Highest level of access
    - Can manage admins and system configuration
+   - Can modify any user account including other SUPER_ADMIN accounts
    - Has access to all resources
    - Inherits all ADMIN permissions
 
@@ -123,6 +127,37 @@ router.delete('/users/:id',
 );
 ```
 
+### Advanced Admin Management Routes
+
+```typescript
+// Change user role (ADMIN and SUPER_ADMIN only)
+router.patch('/users/:userId/role',
+  requireAdmin,
+  validate({ 
+    params: z.object({ userId: objectIdSchema }),
+    body: changeUserRoleSchema 
+  }),
+  adminController.changeUserRole
+);
+
+// Toggle account status (ADMIN and SUPER_ADMIN only)
+router.patch('/users/:userId/status',
+  requireAdmin,
+  validate({ 
+    params: z.object({ userId: objectIdSchema }),
+    body: toggleAccountStatusSchema 
+  }),
+  adminController.toggleAccountStatus
+);
+
+// Bulk operations (ADMIN and SUPER_ADMIN only)
+router.post('/users/bulk',
+  requireAdmin,
+  validate({ body: bulkUserOperationSchema }),
+  adminController.bulkUserOperation
+);
+```
+
 ### Current User Routes
 
 ```typescript
@@ -157,6 +192,57 @@ router.post('/me/deactivate', userController.deactivateCurrentUser);
 | `/users/:id` | GET | ❌ | ✅ | ✅ | ✅ | ✅ |
 | `/users/:id` | PUT | ❌ | ✅ | ✅ | ✅ | ✅ |
 | `/users/:id` | DELETE | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `/users/:userId/role` | PATCH | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `/users/:userId/status` | PATCH | ❌ | ❌ | ❌ | ✅ | ✅ |
+| `/users/bulk` | POST | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+## Admin Restrictions
+
+### ADMIN Role Limitations
+
+ADMIN users have the following restrictions when managing SUPER_ADMIN accounts:
+
+1. **Cannot modify SUPER_ADMIN roles**: ADMIN cannot change the role of a SUPER_ADMIN user
+2. **Cannot activate/deactivate SUPER_ADMIN accounts**: ADMIN cannot toggle the status of SUPER_ADMIN accounts
+3. **Cannot assign SUPER_ADMIN role**: ADMIN cannot promote any user to SUPER_ADMIN
+4. **Cannot perform bulk operations on SUPER_ADMIN**: Bulk operations will fail if they include SUPER_ADMIN users
+
+### SUPER_ADMIN Privileges
+
+SUPER_ADMIN users have unrestricted access:
+
+1. **Can modify any user account**: Including other SUPER_ADMIN accounts
+2. **Can assign any role**: Including SUPER_ADMIN role to other users
+3. **Can perform any bulk operation**: On any users including SUPER_ADMIN accounts
+4. **No restrictions**: Complete system access
+
+## API Endpoints Reference
+
+### User Management Endpoints
+
+| Endpoint | Method | Description | Required Role |
+|----------|--------|-------------|---------------|
+| `GET /api/users` | GET | Get all users with pagination and filters | MODERATOR+ |
+| `GET /api/users/:id` | GET | Get specific user by ID | MODERATOR+ |
+| `PUT /api/users/:id` | PUT | Update user information | MODERATOR+ |
+| `DELETE /api/users/:id` | DELETE | Delete user account | ADMIN+ |
+
+### Advanced Admin Endpoints
+
+| Endpoint | Method | Description | Required Role | Restrictions |
+|----------|--------|-------------|---------------|--------------|
+| `PATCH /api/users/:userId/role` | PATCH | Change user role | ADMIN+ | ADMIN cannot modify SUPER_ADMIN |
+| `PATCH /api/users/:userId/status` | PATCH | Activate/deactivate account | ADMIN+ | ADMIN cannot modify SUPER_ADMIN |
+| `POST /api/users/bulk` | POST | Bulk user operations | ADMIN+ | ADMIN cannot operate on SUPER_ADMIN |
+
+### Current User Endpoints
+
+| Endpoint | Method | Description | Required Role |
+|----------|--------|-------------|---------------|
+| `GET /api/users/me` | GET | Get current user profile | Any authenticated |
+| `PUT /api/users/me` | PUT | Update current user profile | Any authenticated |
+| `POST /api/users/me/change-password` | POST | Change current user password | Any authenticated |
+| `POST /api/users/me/deactivate` | POST | Deactivate current user account | Any authenticated |
 
 ## Error Responses
 
@@ -174,7 +260,16 @@ router.post('/me/deactivate', userController.deactivateCurrentUser);
 {
   "success": false,
   "error": "INSUFFICIENT_PERMISSIONS",
-  "message": "Insufficient permissions to access this resource"
+  "message": "Admins cannot modify super-admin accounts"
+}
+```
+
+### User Not Found (404)
+```json
+{
+  "success": false,
+  "error": "USER_NOT_FOUND",
+  "message": "User not found"
 }
 ```
 
@@ -186,6 +281,8 @@ router.post('/me/deactivate', userController.deactivateCurrentUser);
 4. **Log unauthorized access attempts** for security monitoring
 5. **Test authorization** with different user roles
 6. **Document role requirements** for each route
+7. **Always validate admin restrictions** when modifying user accounts
+8. **Use bulk operations carefully** - they can affect multiple users at once
 
 ## Security Considerations
 
@@ -195,6 +292,8 @@ router.post('/me/deactivate', userController.deactivateCurrentUser);
 4. **Comprehensive logging** tracks all authorization attempts
 5. **Rate limiting** prevents abuse of sensitive endpoints
 6. **Input validation** ensures data integrity
+7. **Admin restrictions** prevent privilege escalation
+8. **Bulk operation safeguards** prevent accidental mass changes
 
 ## Testing Authorization
 
@@ -206,6 +305,9 @@ When testing the RBAC system:
 4. Check that error messages don't leak sensitive information
 5. Ensure that role hierarchy works correctly
 6. Test resource ownership restrictions
+7. Verify admin restrictions work properly
+8. Test bulk operations with mixed user roles
+9. Ensure SUPER_ADMIN can override all restrictions
 
 ## Why This Approach?
 

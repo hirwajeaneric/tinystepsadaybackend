@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import userController from '../controllers/userController';
+import adminController from '../controllers/adminController';
 import { 
   authenticate, 
   requireAdmin, 
-  requireModerator, 
+  requireModerator
 } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { 
@@ -14,7 +15,11 @@ import {
   getUsersQuerySchema,
   objectIdSchema,
   emailVerificationSchema,
-  resendVerificationSchema
+  resendVerificationSchema,
+  changeUserRoleSchema,
+  toggleAccountStatusSchema,
+  bulkUserOperationSchema,
+  deactivateAccountSchema
 } from '../schemas/userSchema';
 import { z } from 'zod';
 import {
@@ -82,7 +87,10 @@ router.post(
   userController.changePassword
 );
 
-router.post('/me/deactivate', userController.deactivateCurrentUser);
+router.post('/me/deactivate', 
+  validate({ body: deactivateAccountSchema }),
+  userController.deactivateCurrentUser
+);
 
 /**
  * *********************************************************************
@@ -122,6 +130,45 @@ router.delete(
   requireAdmin, // Only ADMIN and SUPER_ADMIN can delete users
   validate({ params: z.object({ id: objectIdSchema }) }),
   userController.deleteUser
+);
+
+/**
+ * *********************************************************************
+ * Advanced Admin Management Routes (ADMIN and SUPER_ADMIN only)
+ * *********************************************************************
+ */
+
+// Role management
+router.patch(
+  '/:userId/role',
+  adminRateLimiter,
+  requireAdmin, // Only ADMIN and SUPER_ADMIN can change roles
+  validate({ 
+    params: z.object({ userId: objectIdSchema }),
+    body: changeUserRoleSchema 
+  }),
+  adminController.changeUserRole
+);
+
+// Account activation/deactivation
+router.patch(
+  '/:userId/status',
+  adminRateLimiter,
+  requireAdmin, // Only ADMIN and SUPER_ADMIN can toggle account status
+  validate({ 
+    params: z.object({ userId: objectIdSchema }),
+    body: toggleAccountStatusSchema 
+  }),
+  adminController.toggleAccountStatus
+);
+
+// Bulk operations
+router.post(
+  '/bulk',
+  adminRateLimiter,
+  requireAdmin, // Only ADMIN and SUPER_ADMIN can perform bulk operations
+  validate({ body: bulkUserOperationSchema }),
+  adminController.bulkUserOperation
 );
 
 export default router;

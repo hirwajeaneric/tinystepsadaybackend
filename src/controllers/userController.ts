@@ -1,209 +1,439 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import userService from '../services/userService';
-import { AuthenticatedRequest, ApiResponse, UpdateUserData } from '../types';
-import { GetUsersQueryData } from '../schemas/userSchema';
+import { AuthenticatedRequest } from '../types';
+import { 
+  GetUsersQueryData, 
+  CreateUserData, 
+  UpdateUserData, 
+  LoginData,
+} from '../schemas/userSchema';
 
 class UserController {
-  async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Create a new user (registration)
+   */
+  async createUser(req: Request, res: Response): Promise<void> {
     try {
-      const userData = req.body;
-      const user = await userService.createUser(userData);
-      
-      const response: ApiResponse = {
-        success: true,
-        data: user,
-        message: 'User created successfully',
-      };
+      const userData = req.body as CreateUserData;
+      const result = await userService.createUser(userData);
 
-      res.status(201).json(response);
-    } catch (error) {
-      next(error);
+      res.status(201).json({
+        success: true,
+        message: 'User created successfully',
+        data: result
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        res.status(409).json({
+          success: false,
+          error: 'DUPLICATE_USER',
+          message: 'User with this email or username already exists'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create user'
+      });
     }
   }
 
-  async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * User login
+   */
+  async loginUser(req: Request, res: Response): Promise<void> {
+    try {
+      const loginData: LoginData = req.body;
+      const userIpAddress = req.ip || '';
+      const userAgent = req.headers['user-agent'];
+      const userDeviceInfo = req.headers['x-device-info'] as string | undefined;
+      
+      const result = await userService.authenticateUser(loginData, userIpAddress, userAgent, userDeviceInfo);
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: result
+      });
+    } catch (error: any) {
+      if (error.message === 'Invalid email or password') {
+        res.status(401).json({
+          success: false,
+          error: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password'
+        });
+        return;
+      }
+
+      if (error.message === 'Account is deactivated') {
+        res.status(403).json({
+          success: false,
+          error: 'ACCOUNT_DISABLED',
+          message: 'Account is deactivated'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Login failed'
+      });
+    }
+  }
+
+  /**
+   * Get current user profile
+   */
+  async getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const user = await userService.getUserById(userId);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'User profile retrieved successfully',
+        data: user
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve user profile'
+      });
+    }
+  }
+
+  /**
+   * Update current user profile
+   */
+  async updateCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const updateData = req.body as UpdateUserData;
+
+      // Remove sensitive fields that shouldn't be updated via this endpoint
+      const { email, ...safeUpdateData } = updateData;
+
+      const updatedUser = await userService.updateUser(userId, safeUpdateData as UpdateUserData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: updatedUser
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        res.status(409).json({
+          success: false,
+          error: 'DUPLICATE_USERNAME',
+          message: 'Username already taken'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to update profile'
+      });
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { currentPassword, newPassword } = req.body;
+
+      await userService.changePassword(userId, currentPassword, newPassword);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password changed successfully'
+      });
+    } catch (error: any) {
+      if (error.message === 'Current password is incorrect') {
+        res.status(400).json({
+          success: false,
+          error: 'INVALID_CURRENT_PASSWORD',
+          message: 'Current password is incorrect'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to change password'
+      });
+    }
+  }
+
+  /**
+   * Deactivate current user account
+   * This is a soft deactivation - the account is marked as inactive but not deleted
+   * Users can request reactivation through admin or support
+   */
+  async deactivateCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const { password, reason } = req.body;
+
+      // Verify password before deactivation for security
+      if (!password) {
+        res.status(400).json({
+          success: false,
+          error: 'PASSWORD_REQUIRED',
+          message: 'Password is required to deactivate account'
+        });
+        return;
+      }
+
+      // Verify current password
+      const user = await userService.getUserById(userId);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
+      // Update user to inactive status
+      await userService.updateUser(userId, { isActive: false });
+
+      res.status(200).json({
+        success: true,
+        message: 'Account deactivated successfully. You can request reactivation through support.',
+        data: {
+          deactivatedAt: new Date(),
+          reason: reason || 'User requested deactivation'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to deactivate account'
+      });
+    }
+  }
+
+  /**
+   * Get all users (with pagination and filters)
+   */
+  async getUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const query: GetUsersQueryData = (req as any).validatedQuery || req.query as unknown as GetUsersQueryData;
+      const result = await userService.getUsers(query);
+
+      res.status(200).json({
+        success: true,
+        message: 'Users retrieved successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve users'
+      });
+    }
+  }
+
+  /**
+   * Get user by ID
+   */
+  async getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const user = await userService.getUserById(id as string);
-      
-      const response: ApiResponse = {
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_USER_ID',
+          message: 'User ID is required'
+        });
+        return;
+      }
+
+      const user = await userService.getUserById(id);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
+      res.status(200).json({
         success: true,
         message: 'User retrieved successfully',
-        data: user,
-      };
-
-      res.status(200).json(response);
+        data: user
+      });
     } catch (error) {
-      next(error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve user'
+      });
     }
   }
 
-  async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // Use validated query data if available, otherwise fall back to req.query
-      const query: GetUsersQueryData = (req as any).validatedQuery || req.query as unknown as GetUsersQueryData;
-
-      const result = await userService.getUsers(query);
-      
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Update user by ID
+   */
+  async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const updateData = req.body;
-      const user = await userService.updateUser(id as string, updateData);
-      
-      const response: ApiResponse = {
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_USER_ID',
+          message: 'User ID is required'
+        });
+        return;
+      }
+
+      const updateData = req.body as UpdateUserData;
+
+      const updatedUser = await userService.updateUser(id, updateData);
+
+      res.status(200).json({
         success: true,
-        data: user,
         message: 'User updated successfully',
-      };
+        data: updatedUser
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        res.status(409).json({
+          success: false,
+          error: 'DUPLICATE_USERNAME',
+          message: 'Username already taken'
+        });
+        return;
+      }
 
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to update user'
+      });
     }
   }
 
-  async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Delete user by ID
+   */
+  async deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      await userService.deleteUser(id as string);
-      
-      const response: ApiResponse = {
-        success: true,
-        message: 'User deleted successfully',
-      };
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_USER_ID',
+          message: 'User ID is required'
+        });
+        return;
+      }
 
-      res.status(200).json(response);
+      await userService.deleteUser(id);
+
+      res.status(200).json({
+        success: true,
+        message: 'User deleted successfully'
+      });
     } catch (error) {
-      next(error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to delete user'
+      });
     }
   }
 
-  async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Verify email
+   */
+  async verifyEmail(req: Request, res: Response): Promise<void> {
     try {
-      const loginData = req.body;
+      const { token } = req.body;
+      await userService.verifyEmail(token);
 
-      const userIpAddress = req.ip;
-      const userAgent = req.headers['user-agent'];
-      const userDeviceInfo = req.headers['x-device-info'];
-      const result = await userService.authenticateUser(loginData, userIpAddress || '', userAgent || '', userDeviceInfo as string | undefined);
-      
-      const response: ApiResponse = {
+      res.status(200).json({
         success: true,
-        data: {
-          user: result.user,
-          token: result.token,
-        },
-        message: 'Login successful',
-      };
+        message: 'Email verified successfully'
+      });
+    } catch (error: any) {
+      if (error.message === 'Invalid or expired token') {
+        res.status(400).json({
+          success: false,
+          error: 'INVALID_TOKEN',
+          message: 'Invalid or expired verification token'
+        });
+        return;
+      }
 
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to verify email'
+      });
     }
   }
 
-  async getCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(req: Request, res: Response): Promise<void> {
     try {
-      const user = await userService.getUserById(req.user!.userId);
-      
-      const response: ApiResponse = {
+      const { email } = req.body;
+      await userService.resendVerificationEmail(email);
+
+      res.status(200).json({
         success: true,
-        message: 'Current user retrieved successfully',
-        data: user,
-      };
+        message: 'Verification email sent successfully'
+      });
+    } catch (error: any) {
+      if (error.message === 'User not found') {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
 
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
+      if (error.message === 'Email already verified') {
+        res.status(400).json({
+          success: false,
+          error: 'EMAIL_ALREADY_VERIFIED',
+          message: 'Email is already verified'
+        });
+        return;
+      }
 
-  async updateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const updateData: UpdateUserData = req.body;
-      const user = await userService.updateUser(req.user!.userId, updateData);
-      
-      const response: ApiResponse = {
-        success: true,
-        data: user,
-        message: 'Profile updated successfully',
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { currentPassword, newPassword } = req.body;
-      await userService.changePassword(req.user!.userId, currentPassword, newPassword);
-      
-      const response: ApiResponse = {
-        success: true,
-        message: 'Password changed successfully',
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async deactivateCurrentUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const updateData: UpdateUserData = { isActive: false };
-      await userService.updateUser(req.user!.userId, updateData);
-      
-      const response: ApiResponse = {
-        success: true,
-        message: 'Account deactivated successfully',
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const verificationData = req.body;
-      const user = await userService.verifyEmail(verificationData);
-      
-      const response: ApiResponse = {
-        success: true,
-        data: user,
-        message: 'Email verified successfully',
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async resendVerificationEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const resendData = req.body;
-      await userService.resendVerificationEmail(resendData);
-      
-      const response: ApiResponse = {
-        success: true,
-        message: 'Verification email sent successfully',
-      };
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to resend verification email'
+      });
     }
   }
 }
