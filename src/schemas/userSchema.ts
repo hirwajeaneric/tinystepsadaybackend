@@ -52,31 +52,16 @@ export const changePasswordSchema = z.object({
   newPassword: userSchema.shape.password,
 });
 
-// Query parameters schema
+// Query parameters schema for getting users
 export const getUsersQuerySchema = z.object({
-  page: z
-    .string()
-    .regex(/^\d+$/, 'Page must be a number')
-    .transform(Number)
-    .refine(val => val > 0, 'Page must be greater than 0')
-    .optional()
-    .default(1),
-  limit: z
-    .string()
-    .regex(/^\d+$/, 'Limit must be a number')
-    .transform(Number)
-    .refine(val => val > 0 && val <= 100, 'Limit must be between 1 and 100')
-    .optional()
-    .default(10),
-  search: z
-    .string()
-    .max(100, 'Search term must be less than 100 characters')
-    .optional(),
-  isActive: z
-    .string()
-    .refine(val => val === 'true' || val === 'false', 'isActive must be true or false')
-    .transform(val => val === 'true')
-    .optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  search: z.string().max(100, 'Search term must be less than 100 characters').optional(),
+  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN']).optional(),
+  isActive: z.coerce.boolean().optional(),
+  isEmailVerified: z.coerce.boolean().optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'lastLogin', 'email', 'username']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc')
 });
 
 // MongoDB ObjectId schema

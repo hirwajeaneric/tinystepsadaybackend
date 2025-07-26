@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { z, ZodError, ZodIssue } from 'zod';
 import { validationConfig } from '../config/security';
 import logger from '../utils/logger';
-import { ParsedQs } from 'qs';
 import { ParamsDictionary } from 'express-serve-static-core';
 
 // Common validation schemas
@@ -113,35 +112,9 @@ export const twoFactorVerifySchema = z.object({
   code: z.string().length(6, 'Two-factor code must be 6 digits')
 });
 
-// User management validation schemas
-export const userQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
-  search: z.string().optional(),
-  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN']).optional(),
-  isActive: z.coerce.boolean().optional(),
-  isEmailVerified: z.coerce.boolean().optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'lastLogin', 'email', 'username']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc')
-});
 
-export const userSearchSchema = z.object({
-  query: z.string().min(1, 'Search query is required'),
-  fields: z.array(z.enum(['email', 'username', 'firstName', 'lastName'])).optional(),
-  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN']).optional(),
-  isActive: z.coerce.boolean().optional(),
-  isEmailVerified: z.coerce.boolean().optional(),
-  limit: z.coerce.number().int().positive().max(50).default(10)
-});
 
-export const bulkUserOperationSchema = z.object({
-  userIds: z.array(z.string()).min(1, 'At least one user ID is required'),
-  operation: z.enum(['activate', 'deactivate', 'delete', 'changeRole']),
-  data: z.object({
-    role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN']).optional(),
-    reason: z.string().max(500).optional()
-  }).optional()
-});
+
 
 // Notification validation schemas
 export const notificationQuerySchema = z.object({
@@ -207,7 +180,9 @@ export const validate = (config: ValidationConfig) => {
 
       // Validate query parameters
       if (config.query && req.query && Object.keys(req.query).length > 0) {
-        req.query = config.query.parse(req.query) as ParsedQs;
+        const validatedQuery = config.query.parse(req.query);
+        // Store validated query in a custom property instead of overwriting req.query
+        (req as any).validatedQuery = validatedQuery;
       }
 
       // Validate URL parameters
@@ -264,9 +239,8 @@ export const validateRevokeSession = validate({ body: revokeSessionSchema });
 export const validateRevokeAllSessions = validate({ body: revokeAllSessionsSchema });
 export const validateTwoFactorSetup = validate({ body: twoFactorSetupSchema });
 export const validateTwoFactorVerify = validate({ body: twoFactorVerifySchema });
-export const validateUserQuery = validate({ query: userQuerySchema });
-export const validateUserSearch = validate({ body: userSearchSchema });
-export const validateBulkUserOperation = validate({ body: bulkUserOperationSchema });
+
+
 export const validateNotificationQuery = validate({ query: notificationQuerySchema });
 export const validateMarkNotificationRead = validate({ body: markNotificationReadSchema });
 export const validateMarkAllNotificationsRead = validate({ body: markAllNotificationsReadSchema });

@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import userService from '../services/userService';
 import { AuthenticatedRequest, ApiResponse, UpdateUserData } from '../types';
-import { 
-  GetUsersQueryData
-} from '../schemas/userSchema';
+import { GetUsersQueryData } from '../schemas/userSchema';
 
 class UserController {
   async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -42,7 +40,8 @@ class UserController {
 
   async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const query: GetUsersQueryData = req.query as unknown as GetUsersQueryData;
+      // Use validated query data if available, otherwise fall back to req.query
+      const query: GetUsersQueryData = (req as any).validatedQuery || req.query as unknown as GetUsersQueryData;
       const result = await userService.getUsers(query);
       
       res.status(200).json(result);
@@ -88,7 +87,7 @@ class UserController {
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const loginData = req.body;
-      
+
       const userIpAddress = req.ip;
       const userAgent = req.headers['user-agent'];
       const userDeviceInfo = req.headers['x-device-info'];

@@ -124,38 +124,67 @@ class UserService {
 
   async getUsers(query: GetUsersQueryData): Promise<PaginatedResponse<UserResponse>> {
     try {
-      const { page, limit, search, isActive } = query;
+      const { page, limit, search, isActive, isEmailVerified, role, sortBy, sortOrder } = query;
       const skip = (page - 1) * limit;
-
-      // Build where clause
+      
+      // Build where clause for filtering
       const where: any = {};
       
-      if (search) {
+      // Add search functionality
+      if (search && search.trim()) {
+        const searchTerm = search.trim();
         where.OR = [
-          { email: { contains: search, mode: 'insensitive' } },
-          { username: { contains: search, mode: 'insensitive' } },
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: searchTerm, mode: 'insensitive' } },
+          { username: { contains: searchTerm, mode: 'insensitive' } },
+          { firstName: { contains: searchTerm, mode: 'insensitive' } },
+          { lastName: { contains: searchTerm, mode: 'insensitive' } },
         ];
       }
 
+      // Add boolean filters
       if (isActive !== undefined) {
-        where.isActive = isActive;
+        where.isActive = Boolean(isActive);
       }
 
-      // Get users and total count
+      if (isEmailVerified !== undefined) {
+        where.isEmailVerified = Boolean(isEmailVerified);
+      }
+
+      // Add role filter
+      if (role) {
+        where.role = role;
+      }
+
+      // Build orderBy clause
+      const orderBy: any = { [sortBy]: sortOrder };
+
+      logger.info('Fetching users with filters:', {
+        where,
+        skip,
+        take: limit,
+        orderBy,
+      });
+
+      // Get users and total count in parallel for better performance
       const [users, total] = await Promise.all([
         this.prisma.user.findMany({
           where,
           skip,
           take: limit,
-          orderBy: { createdAt: 'desc' },
+          orderBy,
         }),
         this.prisma.user.count({ where }),
       ]);
 
       const userResponses = users.map((user: PrismaUser) => this.toUserResponse(user));
       const totalPages = Math.ceil(total / limit);
+
+      logger.info('Users fetched successfully:', {
+        total,
+        returned: users.length,
+        page,
+        totalPages,
+      });
 
       return {
         success: true,

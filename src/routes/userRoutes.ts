@@ -7,7 +7,7 @@ import {
   updateUserSchema, 
   loginSchema, 
   changePasswordSchema, 
-  getUsersQuerySchema, 
+  getUsersQuerySchema,
   objectIdSchema,
   emailVerificationSchema,
   resendVerificationSchema
