@@ -246,7 +246,7 @@ class UserService {
     }
   }
 
-  async authenticateUser(loginData: LoginData): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
+  async  authenticateUser(loginData: LoginData, userIpAddress: string, userAgent: string | undefined, userDeviceInfo: string | undefined): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: loginData.email },
@@ -280,9 +280,9 @@ class UserService {
           data: {
             userId: user.id,
             refreshToken: refreshToken,
-            deviceInfo: 'Web Browser', // TODO: Extract from request
-            ipAddress: '127.0.0.1', // TODO: Extract from request
-            userAgent: 'Unknown', // TODO: Extract from request
+            deviceInfo: userDeviceInfo || null,
+            ipAddress: userIpAddress,
+            userAgent: userAgent || null,
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
           },
         })

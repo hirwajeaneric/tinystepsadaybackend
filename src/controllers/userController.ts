@@ -88,7 +88,11 @@ class UserController {
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const loginData = req.body;
-      const result = await userService.authenticateUser(loginData);
+      
+      const userIpAddress = req.ip;
+      const userAgent = req.headers['user-agent'];
+      const userDeviceInfo = req.headers['x-device-info'];
+      const result = await userService.authenticateUser(loginData, userIpAddress || '', userAgent || '', userDeviceInfo as string | undefined);
       
       const response: ApiResponse = {
         success: true,
