@@ -27,7 +27,7 @@ import {
   RefreshTokenData
 } from '../schemas/userSchema';
 import logger from '../utils/logger';
-import { generateAndSendVerificationCode } from './mail.service';
+import { generateAndSendVerificationEmail } from './mail.service';
 
 class UserService {
   private prisma = database.prisma;
@@ -73,10 +73,9 @@ class UserService {
       // Send verification email
       try {
         const userName = userData.firstName || userData.username;
-        await generateAndSendVerificationCode(
+        await generateAndSendVerificationEmail(
           user.email,
           userName,
-          `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`,
           verificationCode
         );
         
@@ -483,10 +482,9 @@ class UserService {
 
       // Send verification email
       const userName = user.firstName || user.username;
-      await generateAndSendVerificationCode(
+      await generateAndSendVerificationEmail(
         user.email,
         userName,
-        `${process.env['FRONTEND_URL']}/verify-email?email=${user.email}`,
         verificationCode
       );
 
