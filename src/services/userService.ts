@@ -318,9 +318,9 @@ class UserService {
       ]);
 
       // Generate token
-      const { TokenUtils } = await import('../utils/security');
       const { jwtConfig } = await import('../config/security');
-      const token = TokenUtils.generateToken({
+      const jwt = await import('jsonwebtoken');
+      const token = jwt.sign({
         userId: user.id,
         email: user.email,
         username: user.username,
