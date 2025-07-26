@@ -8,6 +8,7 @@ import {
   LoginData,
   ForgotPasswordData,
   ResetPasswordData,
+  RefreshTokenData,
 } from '../schemas/userSchema';
 
 class UserController {
@@ -531,6 +532,55 @@ class UserController {
         success: false,
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to reset password'
+      });
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshToken(req: Request, res: Response): Promise<void> {
+    try {
+      const refreshTokenData: RefreshTokenData = req.body;
+      const result = await userService.refreshAccessToken(refreshTokenData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Tokens refreshed successfully',
+        data: result
+      });
+    } catch (error: any) {
+      if (error.message === 'Invalid refresh token') {
+        res.status(401).json({
+          success: false,
+          error: 'INVALID_REFRESH_TOKEN',
+          message: 'Invalid refresh token'
+        });
+        return;
+      }
+
+      if (error.message === 'Session expired or invalid') {
+        res.status(401).json({
+          success: false,
+          error: 'SESSION_EXPIRED',
+          message: 'Session expired or invalid'
+        });
+        return;
+      }
+
+      if (error.message === 'User not found or inactive') {
+        res.status(401).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found or inactive'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to refresh token'
       });
     }
   }

@@ -23,7 +23,8 @@ import {
   ToggleAccountStatusData,
   BulkUserOperationData,
   ForgotPasswordData,
-  ResetPasswordData
+  ResetPasswordData,
+  RefreshTokenData
 } from '../schemas/userSchema';
 import logger from '../utils/logger';
 import { generateAndSendVerificationCode } from './mail.service';
@@ -304,9 +305,9 @@ class UserService {
         throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
       }
 
-      // Generate a secure refresh token
+      // Generate a secure refresh token string for database storage
       const { CryptoUtils } = await import('../utils/security');
-      const refreshToken = CryptoUtils.randomString(64);
+      const refreshTokenString = CryptoUtils.randomString(64);
 
       // Update last login and create a new session
       const [, session] = await Promise.all([
@@ -317,7 +318,7 @@ class UserService {
         this.prisma.userSession.create({
           data: {
             userId: user.id,
-            refreshToken: refreshToken,
+            refreshToken: refreshTokenString,
             deviceInfo: userDeviceInfo || null,
             ipAddress: userIpAddress,
             userAgent: userAgent || null,
@@ -326,10 +327,12 @@ class UserService {
         })
       ]);
 
-      // Generate token
+      // Generate JWT tokens
       const { jwtConfig } = await import('../config/security');
       const jwt = await import('jsonwebtoken');
-      const token = jwt.sign({
+      
+      // Generate access token
+      const accessToken = jwt.sign({
         userId: user.id,
         email: user.email,
         username: user.username,
@@ -342,11 +345,25 @@ class UserService {
         audience: jwtConfig.audience
       });
 
+      // Generate JWT refresh token
+      const refreshToken = jwt.sign({
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        sessionId: session.id,
+        type: 'refresh'
+      }, jwtConfig.secret, {
+        expiresIn: '7d',
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      });
+
       logger.info('User authenticated successfully:', { userId: user.id, email: user.email });
       
       return {
         user: this.toUserResponse(user),
-        token,
+        token: accessToken,
         refreshToken,
         expiresIn: 15 * 60 // 15 minutes in seconds
       };
@@ -788,6 +805,89 @@ class UserService {
     } catch (error) {
       logger.error('Error sending password reset email:', error);
       throw new ValidationError('Failed to send password reset email');
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshAccessToken(refreshTokenData: RefreshTokenData): Promise<{ token: string; refreshToken: string; expiresIn: number }> {
+    try {
+      const { refreshToken } = refreshTokenData;
+
+      // Import JWT and config
+      const jwt = await import('jsonwebtoken');
+      const { jwtConfig } = await import('../config/security');
+
+      // Verify refresh token
+      const payload = jwt.verify(refreshToken, jwtConfig.secret, {
+        algorithms: ['HS256'],
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      }) as any;
+
+      if (payload.type !== 'refresh') {
+        throw new ValidationError('Invalid refresh token');
+      }
+
+      // Verify session is still valid
+      const session = await this.prisma.userSession.findUnique({
+        where: { id: payload.sessionId },
+        select: { isActive: true, expiresAt: true }
+      });
+
+      if (!session || !session.isActive || new Date() > session.expiresAt) {
+        throw new ValidationError('Session expired or invalid');
+      }
+
+      // Get user information
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, email: true, username: true, role: true, isActive: true }
+      });
+
+      if (!user || !user.isActive) {
+        throw new ValidationError('User not found or inactive');
+      }
+
+      // Generate new access token
+      const newAccessToken = jwt.sign({
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        sessionId: payload.sessionId,
+        type: 'access'
+      }, jwtConfig.secret, {
+        expiresIn: '15m',
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      });
+
+      // Generate new refresh token
+      const newRefreshToken = jwt.sign({
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        sessionId: payload.sessionId,
+        type: 'refresh'
+      }, jwtConfig.secret, {
+        expiresIn: '7d',
+        issuer: jwtConfig.issuer,
+        audience: jwtConfig.audience
+      });
+
+      logger.info('Access token refreshed successfully:', { userId: user.id, sessionId: payload.sessionId });
+
+      return {
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: 15 * 60 // 15 minutes in seconds
+      };
+    } catch (error) {
+      logger.error('Error refreshing access token:', error);
+      throw error;
     }
   }
 

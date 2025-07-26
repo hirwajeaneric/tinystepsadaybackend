@@ -199,6 +199,12 @@ Content-Type: application/json
       "isActive": true
     },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 900
+  }
+}
+```
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "...",
     "expiresIn": 900
   }
@@ -256,7 +262,101 @@ done
 
 ---
 
-### **3. Email Verification**
+### **3. Token Refresh**
+**Endpoint**: `POST /api/users/refresh-token`
+
+#### **✅ Happy Path Tests**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Expected Response**:
+```json
+{
+  "success": true,
+  "message": "Tokens refreshed successfully",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 900
+  }
+}
+```
+
+#### **❌ Edge Cases & Error Tests**
+
+**1. Missing Refresh Token**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{}
+```
+**Expected**: `400 BAD REQUEST` - "Refresh token is required"
+
+**2. Invalid Refresh Token**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "invalid-token"
+}
+```
+**Expected**: `401 UNAUTHORIZED` - "Invalid refresh token"
+
+**3. Expired Refresh Token**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "expired-jwt-token"
+}
+```
+**Expected**: `401 UNAUTHORIZED` - "Refresh token expired"
+
+**4. Session Expired**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "valid-jwt-with-expired-session"
+}
+```
+**Expected**: `401 UNAUTHORIZED` - "Session expired or invalid"
+
+**5. User Inactive**
+```http
+POST /api/users/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "valid-jwt-for-inactive-user"
+}
+```
+**Expected**: `401 UNAUTHORIZED` - "User not found or inactive"
+
+**6. Rate Limiting**
+```bash
+# Send 6 refresh attempts within 15 minutes
+for i in {1..6}; do
+  curl -X POST http://localhost:8080/api/users/refresh-token \
+    -H "Content-Type: application/json" \
+    -d '{"refreshToken":"test-token"}'
+done
+```
+**Expected**: 6th request returns `429 TOO MANY REQUESTS`
+
+---
+
+### **4. Email Verification**
 **Endpoint**: `POST /api/users/verify-email`
 
 #### **✅ Happy Path Tests**
@@ -319,7 +419,7 @@ Content-Type: application/json
 
 ---
 
-### **4. Resend Verification Email**
+### **5. Resend Verification Email**
 **Endpoint**: `POST /api/users/resend-verification`
 
 #### **✅ Happy Path Tests**
@@ -366,7 +466,7 @@ Content-Type: application/json
 
 ---
 
-### **5. Forgot Password**
+### **6. Forgot Password**
 **Endpoint**: `POST /api/users/forgot-password`
 
 #### **✅ Happy Path Tests**
@@ -424,7 +524,7 @@ done
 
 ---
 
-### **6. Reset Password**
+### **7. Reset Password**
 **Endpoint**: `POST /api/users/reset-password`
 
 #### **✅ Happy Path Tests**
@@ -493,7 +593,7 @@ Content-Type: application/json
 
 ## 👤 **Current User Endpoints (Protected)**
 
-### **7. Get Current User Profile**
+### **8. Get Current User Profile**
 **Endpoint**: `GET /api/users/me`
 
 #### **✅ Happy Path Tests**
@@ -546,7 +646,7 @@ Authorization: Bearer <expired_token>
 
 ---
 
-### **8. Update Current User Profile**
+### **9. Update Current User Profile**
 **Endpoint**: `PUT /api/users/me`
 
 #### **✅ Happy Path Tests**
@@ -616,7 +716,7 @@ done
 
 ---
 
-### **9. Change Password**
+### **10. Change Password**
 **Endpoint**: `POST /api/users/me/change-password`
 
 #### **✅ Happy Path Tests**
@@ -669,7 +769,7 @@ Content-Type: application/json
 
 ---
 
-### **10. Deactivate Current User Account**
+### **11. Deactivate Current User Account**
 **Endpoint**: `POST /api/users/me/deactivate`
 
 #### **✅ Happy Path Tests**
@@ -727,7 +827,7 @@ Content-Type: application/json
 
 ## 🔧 **User Management Endpoints (Admin)**
 
-### **11. Get All Users**
+### **12. Get All Users**
 **Endpoint**: `GET /api/users`
 
 #### **✅ Happy Path Tests**
@@ -786,7 +886,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### **12. Get User by ID**
+### **13. Get User by ID**
 **Endpoint**: `GET /api/users/:id`
 
 #### **✅ Happy Path Tests**
@@ -828,7 +928,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### **13. Update User**
+### **14. Update User**
 **Endpoint**: `PUT /api/users/:id`
 
 #### **✅ Happy Path Tests**
@@ -886,7 +986,7 @@ Content-Type: application/json
 
 ---
 
-### **14. Delete User**
+### **15. Delete User**
 **Endpoint**: `DELETE /api/users/:id`
 
 #### **✅ Happy Path Tests**
@@ -923,7 +1023,7 @@ Authorization: Bearer <admin_token>
 
 ## 👑 **Advanced Admin Management Endpoints**
 
-### **15. Change User Role**
+### **16. Change User Role**
 **Endpoint**: `PATCH /api/users/:userId/role`
 
 #### **✅ Happy Path Tests**
@@ -991,7 +1091,7 @@ Content-Type: application/json
 
 ---
 
-### **16. Toggle Account Status**
+### **17. Toggle Account Status**
 **Endpoint**: `PATCH /api/users/:userId/status`
 
 #### **✅ Happy Path Tests**
@@ -1048,7 +1148,7 @@ Content-Type: application/json
 
 ---
 
-### **17. Bulk User Operations**
+### **18. Bulk User Operations**
 **Endpoint**: `POST /api/users/bulk`
 
 #### **✅ Happy Path Tests**

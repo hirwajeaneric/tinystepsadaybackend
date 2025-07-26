@@ -136,6 +136,11 @@ export const resetPasswordSchema = z.object({
   newPassword: userSchema.shape.password,
 });
 
+// Refresh token schema
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token is required'),
+});
+
 // Validation helper types
 export type CreateUserData = z.infer<typeof createUserSchema>;
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
@@ -151,3 +156,4 @@ export type UserSearchData = z.infer<typeof userSearchSchema>;
 export type DeactivateAccountData = z.infer<typeof deactivateAccountSchema>;
 export type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
+export type RefreshTokenData = z.infer<typeof refreshTokenSchema>;

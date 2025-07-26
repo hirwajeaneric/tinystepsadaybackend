@@ -21,7 +21,8 @@ import {
   bulkUserOperationSchema,
   deactivateAccountSchema,
   forgotPasswordSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
+  refreshTokenSchema
 } from '../schemas/userSchema';
 import { z } from 'zod';
 import {
@@ -78,6 +79,14 @@ router.post(
   passwordResetRateLimiter, // 3 password reset attempts per hour
   validate({ body: resetPasswordSchema }),
   userController.resetPassword
+);
+
+// Token refresh route (public)
+router.post(
+  '/refresh-token',
+  authRateLimiter, // 5 refresh attempts per 15 minutes
+  validate({ body: refreshTokenSchema }),
+  userController.refreshToken
 );
 
 /**
