@@ -15,7 +15,14 @@ import {
   ValidationError,
 } from '../utils/errors';
 import { ErrorCode } from '../types/errors';
-import { GetUsersQueryData, EmailVerificationData, ResendVerificationData } from '../schemas/userSchema';
+import { 
+  GetUsersQueryData, 
+  EmailVerificationData, 
+  ResendVerificationData,
+  ChangeUserRoleData,
+  ToggleAccountStatusData,
+  BulkUserOperationData
+} from '../schemas/userSchema';
 import logger from '../utils/logger';
 import { generateAndSendVerificationCode } from './mail.service';
 
@@ -471,6 +478,176 @@ class UserService {
       });
     } catch (error) {
       logger.error('Error resending verification email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Change user role (Admin functionality)
+   */
+  async changeUserRole(userId: string, roleData: ChangeUserRoleData): Promise<UserResponse> {
+    try {
+      // Check if target user exists
+      const targetUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, email: true, username: true }
+      });
+
+      if (!targetUser) {
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
+      }
+
+      // Update user role
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          role: roleData.role,
+          updatedAt: new Date()
+        },
+      });
+
+      logger.info('User role changed', {
+        targetUser: userId,
+        oldRole: targetUser.role,
+        newRole: roleData.role,
+        reason: roleData.reason
+      });
+
+      return this.toUserResponse(updatedUser);
+    } catch (error) {
+      logger.error('Error changing user role:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle account activation/deactivation (Admin functionality)
+   */
+  async toggleAccountStatus(userId: string, statusData: ToggleAccountStatusData): Promise<UserResponse> {
+    try {
+      // Check if target user exists
+      const targetUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, email: true, username: true, isActive: true }
+      });
+
+      if (!targetUser) {
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
+      }
+
+      // Update account status
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          isActive: statusData.isActive,
+          updatedAt: new Date()
+        },
+      });
+
+      logger.info('User account status changed', {
+        targetUser: userId,
+        oldStatus: targetUser.isActive,
+        newStatus: statusData.isActive,
+        reason: statusData.reason
+      });
+
+      return this.toUserResponse(updatedUser);
+    } catch (error) {
+      logger.error('Error toggling account status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk user operations (Admin functionality)
+   */
+  async bulkUserOperation(operationData: BulkUserOperationData): Promise<{ affectedCount: number; affectedUserIds: string[] }> {
+    try {
+      // Get all target users to validate they exist
+      const targetUsers = await this.prisma.user.findMany({
+        where: { id: { in: operationData.userIds } },
+        select: { id: true, role: true, email: true, username: true, isActive: true }
+      });
+
+      if (targetUsers.length !== operationData.userIds.length) {
+        throw new ValidationError('Some user IDs are invalid', ErrorCode.BAD_REQUEST);
+      }
+
+      let affectedCount = 0;
+
+      switch (operationData.operation) {
+        case 'activate':
+          const activateResult = await this.prisma.user.updateMany({
+            where: { id: { in: operationData.userIds } },
+            data: { isActive: true, updatedAt: new Date() }
+          });
+          affectedCount = activateResult.count;
+          break;
+
+        case 'deactivate':
+          const deactivateResult = await this.prisma.user.updateMany({
+            where: { id: { in: operationData.userIds } },
+            data: { isActive: false, updatedAt: new Date() }
+          });
+          affectedCount = deactivateResult.count;
+          break;
+
+        case 'change_role':
+          if (!operationData.role) {
+            throw new ValidationError('Role is required for change_role operation', ErrorCode.BAD_REQUEST);
+          }
+          const roleResult = await this.prisma.user.updateMany({
+            where: { id: { in: operationData.userIds } },
+            data: { role: operationData.role, updatedAt: new Date() }
+          });
+          affectedCount = roleResult.count;
+          break;
+
+        case 'delete':
+          const deleteResult = await this.prisma.user.deleteMany({
+            where: { id: { in: operationData.userIds } }
+          });
+          affectedCount = deleteResult.count;
+          break;
+
+        default:
+          throw new ValidationError('Invalid operation specified', ErrorCode.BAD_REQUEST);
+      }
+
+      logger.info('Bulk user operation performed', {
+        operation: operationData.operation,
+        affectedUsers: operationData.userIds.length,
+        role: operationData.role,
+        reason: operationData.reason
+      });
+
+      return {
+        affectedCount,
+        affectedUserIds: operationData.userIds
+      };
+    } catch (error) {
+      logger.error('Error performing bulk user operation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user by ID with role information (for admin checks)
+   */
+  async getUserByIdWithRole(userId: string): Promise<{ id: string; role: string; email: string; username: string; isActive?: boolean }> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, email: true, username: true, isActive: true }
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
+      }
+
+      return user;
+    } catch (error) {
+      logger.error('Error fetching user with role:', error);
       throw error;
     }
   }

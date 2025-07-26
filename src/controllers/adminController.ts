@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../types';
-import database from '../utils/database';
+import userService from '../services/userService';
 import { 
   ChangeUserRoleData,
   ToggleAccountStatusData,
@@ -18,20 +18,8 @@ class AdminController {
       const data: ChangeUserRoleData = req.body;
       const currentUser = req.user!;
 
-      // Check if target user exists
-      const targetUser = await database.prisma.user.findUnique({
-        where: { id: userId! },
-        select: { id: true, role: true, email: true, username: true }
-      });
-
-      if (!targetUser) {
-        res.status(404).json({
-          success: false,
-          error: 'USER_NOT_FOUND',
-          message: 'User not found'
-        });
-        return;
-      }
+      // Check if target user exists and get their current role
+      const targetUser = await userService.getUserByIdWithRole(userId!);
 
       // SUPER_ADMIN can change any role
       // ADMIN can change any role EXCEPT SUPER_ADMIN
@@ -54,22 +42,8 @@ class AdminController {
         return;
       }
 
-      // Update user role
-      const updatedUser = await database.prisma.user.update({
-        where: { id: userId! },
-        data: { 
-          role: data.role,
-          updatedAt: new Date()
-        },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          role: true,
-          isActive: true,
-          updatedAt: true
-        }
-      });
+      // Update user role using service
+      const updatedUser = await userService.changeUserRole(userId!, data);
 
       // Log the role change
       logger.info('User role changed', {
@@ -85,7 +59,16 @@ class AdminController {
         message: 'User role updated successfully',
         data: updatedUser
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'User not found') {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
       logger.error('Error changing user role:', error);
       res.status(500).json({
         success: false,
@@ -104,20 +87,8 @@ class AdminController {
       const data: ToggleAccountStatusData = req.body;
       const currentUser = req.user!;
 
-      // Check if target user exists
-      const targetUser = await database.prisma.user.findUnique({
-        where: { id: userId! },
-        select: { id: true, role: true, email: true, username: true, isActive: true }
-      });
-
-      if (!targetUser) {
-        res.status(404).json({
-          success: false,
-          error: 'USER_NOT_FOUND',
-          message: 'User not found'
-        });
-        return;
-      }
+      // Check if target user exists and get their current role
+      const targetUser = await userService.getUserByIdWithRole(userId!);
 
       // SUPER_ADMIN can modify any account
       // ADMIN can modify any account EXCEPT SUPER_ADMIN
@@ -130,22 +101,8 @@ class AdminController {
         return;
       }
 
-      // Update account status
-      const updatedUser = await database.prisma.user.update({
-        where: { id: userId! },
-        data: { 
-          isActive: data.isActive,
-          updatedAt: new Date()
-        },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          role: true,
-          isActive: true,
-          updatedAt: true
-        }
-      });
+      // Update account status using service
+      const updatedUser = await userService.toggleAccountStatus(userId!, data);
 
       // Log the status change
       logger.info('User account status changed', {
@@ -161,7 +118,16 @@ class AdminController {
         message: `User account ${data.isActive ? 'activated' : 'deactivated'} successfully`,
         data: updatedUser
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'User not found') {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
       logger.error('Error toggling account status:', error);
       res.status(500).json({
         success: false,
@@ -179,31 +145,31 @@ class AdminController {
       const data: BulkUserOperationData = req.body;
       const currentUser = req.user!;
 
-      // Get all target users
-      const targetUsers = await database.prisma.user.findMany({
-        where: { id: { in: data.userIds } },
-        select: { id: true, role: true, email: true, username: true, isActive: true }
-      });
-
-      if (targetUsers.length !== data.userIds.length) {
-        res.status(400).json({
-          success: false,
-          error: 'INVALID_USER_IDS',
-          message: 'Some user IDs are invalid'
-        });
-        return;
-      }
-
       // Check for SUPER_ADMIN users if current user is ADMIN
       if (currentUser.role === 'ADMIN') {
-        const superAdminUsers = targetUsers.filter(user => user.role === 'SUPER_ADMIN');
+        // Get all target users to check for SUPER_ADMIN
+        const targetUsers = await userService.getUsers({ 
+          page: 1, 
+          limit: 1000, 
+          search: '', 
+          isActive: undefined, 
+          isEmailVerified: undefined, 
+          role: undefined, 
+          sortBy: 'createdAt', 
+          sortOrder: 'desc' 
+        });
+
+        const superAdminUsers = (targetUsers.data || []).filter((user: any) => 
+          data.userIds.includes(user.id) && user.role === 'SUPER_ADMIN'
+        );
+
         if (superAdminUsers.length > 0) {
           res.status(403).json({
             success: false,
             error: 'INSUFFICIENT_PERMISSIONS',
             message: 'Admins cannot modify super-admin accounts',
             data: {
-              superAdminUsers: superAdminUsers.map(u => ({ id: u.id, email: u.email }))
+              superAdminUsers: superAdminUsers.map((u: any) => ({ id: u.id, email: u.email }))
             }
           });
           return;
@@ -220,56 +186,8 @@ class AdminController {
         }
       }
 
-      let affectedCount = 0;
-
-      switch (data.operation) {
-        case 'activate':
-          const activateResult = await database.prisma.user.updateMany({
-            where: { id: { in: data.userIds } },
-            data: { isActive: true, updatedAt: new Date() }
-          });
-          affectedCount = activateResult.count;
-          break;
-
-        case 'deactivate':
-          const deactivateResult = await database.prisma.user.updateMany({
-            where: { id: { in: data.userIds } },
-            data: { isActive: false, updatedAt: new Date() }
-          });
-          affectedCount = deactivateResult.count;
-          break;
-
-        case 'change_role':
-          if (!data.role) {
-            res.status(400).json({
-              success: false,
-              error: 'MISSING_ROLE',
-              message: 'Role is required for change_role operation'
-            });
-            return;
-          }
-          const roleResult = await database.prisma.user.updateMany({
-            where: { id: { in: data.userIds } },
-            data: { role: data.role, updatedAt: new Date() }
-          });
-          affectedCount = roleResult.count;
-          break;
-
-        case 'delete':
-          const deleteResult = await database.prisma.user.deleteMany({
-            where: { id: { in: data.userIds } }
-          });
-          affectedCount = deleteResult.count;
-          break;
-
-        default:
-          res.status(400).json({
-            success: false,
-            error: 'INVALID_OPERATION',
-            message: 'Invalid operation specified'
-          });
-          return;
-      }
+      // Perform bulk operation using service
+      const result = await userService.bulkUserOperation(data);
 
       // Log the bulk operation
       logger.info('Bulk user operation performed', {
@@ -285,11 +203,38 @@ class AdminController {
         message: `Bulk operation '${data.operation}' completed successfully`,
         data: {
           operation: data.operation,
-          affectedCount: affectedCount,
-          affectedUserIds: data.userIds
+          affectedCount: result.affectedCount,
+          affectedUserIds: result.affectedUserIds
         }
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'Some user IDs are invalid') {
+        res.status(400).json({
+          success: false,
+          error: 'INVALID_USER_IDS',
+          message: 'Some user IDs are invalid'
+        });
+        return;
+      }
+
+      if (error.message === 'Role is required for change_role operation') {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_ROLE',
+          message: 'Role is required for change_role operation'
+        });
+        return;
+      }
+
+      if (error.message === 'Invalid operation specified') {
+        res.status(400).json({
+          success: false,
+          error: 'INVALID_OPERATION',
+          message: 'Invalid operation specified'
+        });
+        return;
+      }
+
       logger.error('Error performing bulk user operation:', error);
       res.status(500).json({
         success: false,
