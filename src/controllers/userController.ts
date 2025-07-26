@@ -245,11 +245,7 @@ class UserController {
       const query: GetUsersQueryData = (req as any).validatedQuery || req.query as unknown as GetUsersQueryData;
       const result = await userService.getUsers(query);
 
-      res.status(200).json({
-        success: true,
-        message: 'Users retrieved successfully',
-        data: result
-      });
+      res.status(200).json(result);
     } catch (error) {
       res.status(500).json({
         success: false,
