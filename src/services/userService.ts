@@ -383,6 +383,7 @@ class UserService {
           isEmailVerified: true,
           emailVerificationToken: null,
           emailVerificationExpires: null,
+          isActive: true,
         },
       });
 
