@@ -42,6 +42,7 @@ class UserController {
     try {
       // Use validated query data if available, otherwise fall back to req.query
       const query: GetUsersQueryData = (req as any).validatedQuery || req.query as unknown as GetUsersQueryData;
+
       const result = await userService.getUsers(query);
       
       res.status(200).json(result);

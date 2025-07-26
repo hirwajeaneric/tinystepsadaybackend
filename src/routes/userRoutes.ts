@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import userController from '../controllers/userController';
-import { authenticate } from '../middleware/auth';
+import { 
+  authenticate, 
+  requireAdmin, 
+  requireModerator, 
+} from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { 
   createUserSchema, 
@@ -54,10 +58,14 @@ router.post(
   userController.resendVerificationEmail
 );
 
-// Protected routes (require authentication)
+/**
+ * *********************************************************************
+ * Protected routes (require authentication)
+ * *********************************************************************
+ */
 router.use(authenticate);
 
-// Current user routes
+// Current user routes (users can only access their own data)
 router.get('/me', userController.getCurrentUser);
 
 router.put(
@@ -76,10 +84,15 @@ router.post(
 
 router.post('/me/deactivate', userController.deactivateCurrentUser);
 
-// Admin routes (for managing other users) with admin rate limiting
+/**
+ * *********************************************************************
+ * Admin routes (for managing other users) with role-based authorization
+ * *********************************************************************
+ */
 router.get(
   '/',
   adminRateLimiter, // 100 admin operations per hour
+  requireModerator, // MODERATOR and above can read users
   validate({ query: getUsersQuerySchema }),
   userController.getUsers
 );
@@ -87,6 +100,7 @@ router.get(
 router.get(
   '/:id',
   adminRateLimiter, // 100 admin operations per hour
+  requireModerator, // MODERATOR and above can read specific users
   validate({ params: z.object({ id: objectIdSchema }) }),
   userController.getUserById
 );
@@ -94,6 +108,7 @@ router.get(
 router.put(
   '/:id',
   adminRateLimiter, // 100 admin operations per hour
+  requireModerator, // MODERATOR and above can update users
   validate({ 
     params: z.object({ id: objectIdSchema }),
     body: updateUserSchema 
@@ -104,6 +119,7 @@ router.put(
 router.delete(
   '/:id',
   adminRateLimiter, // 100 admin operations per hour
+  requireAdmin, // Only ADMIN and SUPER_ADMIN can delete users
   validate({ params: z.object({ id: objectIdSchema }) }),
   userController.deleteUser
 );

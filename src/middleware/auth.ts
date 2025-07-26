@@ -179,7 +179,25 @@ export const optionalAuth = async (
 };
 
 /**
- * Role-based authorization middleware
+ * Role hierarchy - higher roles inherit permissions from lower roles
+ */
+const ROLE_HIERARCHY = {
+  USER: 1,
+  MODERATOR: 2,
+  INSTRUCTOR: 3,
+  ADMIN: 4,
+  SUPER_ADMIN: 5
+} as const;
+
+/**
+ * Check if a user's role has sufficient permissions
+ */
+const hasRolePermission = (userRole: UserRole, requiredRole: UserRole): boolean => {
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+};
+
+/**
+ * Enhanced role-based authorization middleware
  */
 export const authorize = (...roles: UserRole[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
@@ -192,13 +210,17 @@ export const authorize = (...roles: UserRole[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Check if user has any of the required roles
+    const hasPermission = roles.some(role => hasRolePermission(req.user!.role, role));
+
+    if (!hasPermission) {
       logger.warn('Unauthorized access attempt', {
         userId: req.user.userId,
         userRole: req.user.role,
         requiredRoles: roles,
         url: req.url,
-        method: req.method
+        method: req.method,
+        ip: req.ip
       });
 
       res.status(403).json({
@@ -214,22 +236,27 @@ export const authorize = (...roles: UserRole[]) => {
 };
 
 /**
- * Admin-only authorization middleware
+ * Super Admin only authorization middleware
  */
-export const requireAdmin = authorize(UserRole.ADMIN);
+export const requireSuperAdmin = authorize(UserRole.SUPER_ADMIN);
 
 /**
- * Instructor or Admin authorization middleware
+ * Admin or Super Admin authorization middleware
  */
-export const requireInstructor = authorize(UserRole.INSTRUCTOR, UserRole.ADMIN);
+export const requireAdmin = authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN);
 
 /**
- * Moderator or Admin authorization middleware
+ * Instructor, Admin, or Super Admin authorization middleware
  */
-export const requireModerator = authorize(UserRole.MODERATOR, UserRole.ADMIN);
+export const requireInstructor = authorize(UserRole.INSTRUCTOR, UserRole.ADMIN, UserRole.SUPER_ADMIN);
 
 /**
- * Self or Admin authorization middleware (user can access their own data or admin can access any)
+ * Moderator, Instructor, Admin, or Super Admin authorization middleware
+ */
+export const requireModerator = authorize(UserRole.MODERATOR, UserRole.INSTRUCTOR, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+
+/**
+ * Enhanced self or admin authorization middleware
  */
 export const requireSelfOrAdmin = (paramName: string = 'userId') => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
@@ -253,8 +280,8 @@ export const requireSelfOrAdmin = (paramName: string = 'userId') => {
       return;
     }
 
-    // Admin can access any user's data
-    if (req.user.role === UserRole.ADMIN) {
+    // Super Admin and Admin can access any user's data
+    if (req.user.role === UserRole.SUPER_ADMIN || req.user.role === UserRole.ADMIN) {
       return next();
     }
 
@@ -266,8 +293,10 @@ export const requireSelfOrAdmin = (paramName: string = 'userId') => {
     logger.warn('Unauthorized access attempt to user data', {
       userId: req.user.userId,
       targetUserId,
+      userRole: req.user.role,
       url: req.url,
-      method: req.method
+      method: req.method,
+      ip: req.ip
     });
 
     res.status(403).json({
@@ -277,6 +306,85 @@ export const requireSelfOrAdmin = (paramName: string = 'userId') => {
     });
   };
 };
+
+/**
+ * Resource ownership authorization middleware
+ */
+export const requireResourceOwnership = (resourceType: string, idParam: string = 'id') => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'AUTHENTICATION_REQUIRED',
+        message: 'Authentication required'
+      });
+      return;
+    }
+
+    const resourceId = req.params[idParam];
+
+    if (!resourceId) {
+      res.status(400).json({
+        success: false,
+        error: 'MISSING_RESOURCE_ID',
+        message: `${resourceType} ID is required`
+      });
+      return;
+    }
+
+    // Super Admin and Admin can access any resource
+    if (req.user.role === UserRole.SUPER_ADMIN || req.user.role === UserRole.ADMIN) {
+      return next();
+    }
+
+    try {
+      // Check if the resource belongs to the user
+      // Note: This is a generic approach and may need to be customized for specific resources
+      const resource = await (database.prisma as any)[resourceType].findUnique({
+        where: { id: resourceId },
+        select: { userId: true }
+      });
+
+      if (!resource) {
+        res.status(404).json({
+          success: false,
+          error: 'RESOURCE_NOT_FOUND',
+          message: `${resourceType} not found`
+        });
+        return;
+      }
+
+      if (resource.userId !== req.user.userId) {
+        logger.warn('Unauthorized access attempt to resource', {
+          userId: req.user.userId,
+          resourceId,
+          resourceType,
+          url: req.url,
+          method: req.method,
+          ip: req.ip
+        });
+
+        res.status(403).json({
+          success: false,
+          error: 'INSUFFICIENT_PERMISSIONS',
+          message: `You can only access your own ${resourceType}`
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      logger.error('Error checking resource ownership:', error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Error checking resource ownership'
+      });
+    }
+  };
+};
+
+
 
 /**
  * Verify email verification middleware
