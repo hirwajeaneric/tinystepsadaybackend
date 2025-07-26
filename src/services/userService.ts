@@ -27,7 +27,13 @@ import {
   RefreshTokenData
 } from '../schemas/userSchema';
 import logger from '../utils/logger';
-import { generateAndSendVerificationEmail } from './mail.service';
+import { 
+  generateAndSendVerificationEmail,
+  generateAndSendPasswordChangedEmail,
+  generateAndSendWelcomeEmail,
+  generateAndSendRoleChangedEmail,
+  generateAndSendAccountStatusChangedEmail
+} from './mail.service';
 
 class UserService {
   private prisma = database.prisma;
@@ -86,6 +92,23 @@ class UserService {
         });
       } catch (emailError) {
         logger.error('Failed to send verification email:', emailError);
+        // Don't fail user creation if email fails, but log it
+      }
+
+      // Send welcome email
+      try {
+        const userName = userData.firstName || userData.username;
+        await generateAndSendWelcomeEmail(
+          user.email,
+          userName
+        );
+        
+        logger.info('Welcome email sent successfully:', { 
+          userId: user.id, 
+          email: user.email 
+        });
+      } catch (emailError) {
+        logger.error('Failed to send welcome email:', emailError);
         // Don't fail user creation if email fails, but log it
       }
 
@@ -395,6 +418,30 @@ class UserService {
         data: { password: hashedNewPassword },
       });
 
+      // Send password change notification email
+      try {
+        const userName = user.firstName || user.username;
+        const changeTime = new Date().toLocaleString();
+        const ipAddress = 'Unknown'; // Could be passed from controller
+        const deviceInfo = 'Unknown'; // Could be passed from controller
+        
+        await generateAndSendPasswordChangedEmail(
+          user.email,
+          userName,
+          changeTime,
+          ipAddress,
+          deviceInfo
+        );
+        
+        logger.info('Password change notification email sent successfully:', { 
+          userId: user.id, 
+          email: user.email 
+        });
+      } catch (emailError) {
+        logger.error('Failed to send password change notification email:', emailError);
+        // Don't fail password change if email fails, but log it
+      }
+
       logger.info('Password changed successfully:', { userId });
     } catch (error) {
       logger.error('Error changing password:', error);
@@ -523,6 +570,36 @@ class UserService {
         },
       });
 
+      // Send role change notification email
+      try {
+        const userName = targetUser.username;
+        const oldRole = targetUser.role;
+        const newRole = roleData.role;
+        const changedBy = 'Admin'; // Could be passed from controller
+        const changeTime = new Date().toLocaleString();
+        const reason = roleData.reason || 'No reason provided';
+        
+        await generateAndSendRoleChangedEmail(
+          targetUser.email,
+          userName,
+          oldRole,
+          newRole,
+          changedBy,
+          changeTime,
+          reason
+        );
+        
+        logger.info('Role change notification email sent successfully:', { 
+          userId: targetUser.id, 
+          email: targetUser.email,
+          oldRole,
+          newRole
+        });
+      } catch (emailError) {
+        logger.error('Failed to send role change notification email:', emailError);
+        // Don't fail role change if email fails, but log it
+      }
+
       logger.info('User role changed', {
         targetUser: userId,
         oldRole: targetUser.role,
@@ -560,6 +637,37 @@ class UserService {
           updatedAt: new Date()
         },
       });
+
+      // Send account status change notification email
+      try {
+        const userName = targetUser.username;
+        const previousStatus = targetUser.isActive ? 'Active' : 'Inactive';
+        const newStatus = statusData.isActive ? 'Active' : 'Inactive';
+        const changedBy = 'Admin'; // Could be passed from controller
+        const changeTime = new Date().toLocaleString();
+        const reason = statusData.reason || 'No reason provided';
+        
+        await generateAndSendAccountStatusChangedEmail(
+          targetUser.email,
+          userName,
+          previousStatus,
+          newStatus,
+          changedBy,
+          changeTime,
+          reason,
+          statusData.isActive
+        );
+        
+        logger.info('Account status change notification email sent successfully:', { 
+          userId: targetUser.id, 
+          email: targetUser.email,
+          previousStatus,
+          newStatus
+        });
+      } catch (emailError) {
+        logger.error('Failed to send account status change notification email:', emailError);
+        // Don't fail status change if email fails, but log it
+      }
 
       logger.info('User account status changed', {
         targetUser: userId,
