@@ -401,3 +401,34 @@ export const generateAndSendVerificationCode = async (
     await sendVerificationCode(userEmail, userName, verificationCode, verificationUrl);
     return verificationCode as string;
 };
+
+// Send password reset email
+export const generateAndSendPasswordResetEmail = async (
+    userEmail: string,
+    userName: string,
+    resetToken: string
+): Promise<void> => {
+    try {
+        const template = loadEmailTemplate();
+        const templateData: EmailTemplateData = {
+            userName,
+            userEmail,
+            verificationCode: resetToken, // Reuse the same template structure
+            imageUrl: `${clientUrl}/tinystepsaday-logo.png`,
+        };
+
+        const processedHtml = processTemplate(template, templateData);
+        const subject = "Reset Your Password - Tiny Steps A Day";
+
+        await sendMail(userEmail, subject, processedHtml);
+
+        logger.info("Password reset email sent successfully:", {
+            userEmail,
+            userName,
+            resetToken
+        });
+    } catch (error) {
+        logger.error("Error sending password reset email:", error);
+        throw error;
+    }
+};

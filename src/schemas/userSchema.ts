@@ -121,6 +121,21 @@ export const deactivateAccountSchema = z.object({
   reason: z.string().max(500, 'Reason must be less than 500 characters').optional()
 });
 
+// Forgot password schema
+export const forgotPasswordSchema = z.object({
+  email: userSchema.shape.email,
+});
+
+// Reset password schema
+export const resetPasswordSchema = z.object({
+  email: userSchema.shape.email,
+  resetToken: z
+    .string()
+    .length(6, 'Reset token must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'Reset token must contain only digits'),
+  newPassword: userSchema.shape.password,
+});
+
 // Validation helper types
 export type CreateUserData = z.infer<typeof createUserSchema>;
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
@@ -134,3 +149,5 @@ export type ToggleAccountStatusData = z.infer<typeof toggleAccountStatusSchema>;
 export type BulkUserOperationData = z.infer<typeof bulkUserOperationSchema>;
 export type UserSearchData = z.infer<typeof userSearchSchema>;
 export type DeactivateAccountData = z.infer<typeof deactivateAccountSchema>;
+export type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;

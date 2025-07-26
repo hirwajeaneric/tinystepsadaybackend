@@ -6,6 +6,8 @@ import {
   CreateUserData, 
   UpdateUserData, 
   LoginData,
+  ForgotPasswordData,
+  ResetPasswordData,
 } from '../schemas/userSchema';
 
 class UserController {
@@ -433,6 +435,102 @@ class UserController {
         success: false,
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to resend verification email'
+      });
+    }
+  }
+
+  /**
+   * Forgot password - send reset token via email
+   */
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const forgotPasswordData: ForgotPasswordData = req.body;
+      await userService.forgotPassword(forgotPasswordData);
+
+      res.status(200).json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent'
+      });
+    } catch (error: any) {
+      if (error.message === 'Account is deactivated') {
+        res.status(403).json({
+          success: false,
+          error: 'ACCOUNT_DISABLED',
+          message: 'Account is deactivated'
+        });
+        return;
+      }
+
+      if (error.message === 'Failed to send password reset email') {
+        res.status(500).json({
+          success: false,
+          error: 'EMAIL_SEND_FAILED',
+          message: 'Failed to send password reset email'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to process password reset request'
+      });
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const resetPasswordData: ResetPasswordData = req.body;
+      await userService.resetPassword(resetPasswordData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset successfully'
+      });
+    } catch (error: any) {
+      if (error.message === 'User not found') {
+        res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: 'User not found'
+        });
+        return;
+      }
+
+      if (error.message === 'Account is deactivated') {
+        res.status(403).json({
+          success: false,
+          error: 'ACCOUNT_DISABLED',
+          message: 'Account is deactivated'
+        });
+        return;
+      }
+
+      if (error.message === 'Invalid reset token') {
+        res.status(400).json({
+          success: false,
+          error: 'INVALID_TOKEN',
+          message: 'Invalid reset token'
+        });
+        return;
+      }
+
+      if (error.message === 'Reset token has expired') {
+        res.status(400).json({
+          success: false,
+          error: 'TOKEN_EXPIRED',
+          message: 'Reset token has expired'
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to reset password'
       });
     }
   }

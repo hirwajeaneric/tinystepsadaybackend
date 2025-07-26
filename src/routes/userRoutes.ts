@@ -19,7 +19,9 @@ import {
   changeUserRoleSchema,
   toggleAccountStatusSchema,
   bulkUserOperationSchema,
-  deactivateAccountSchema
+  deactivateAccountSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema
 } from '../schemas/userSchema';
 import { z } from 'zod';
 import {
@@ -61,6 +63,21 @@ router.post(
   emailVerificationRateLimiter, // Rate limit for resending verification
   validate({ body: resendVerificationSchema }),
   userController.resendVerificationEmail
+);
+
+// Password reset routes (public)
+router.post(
+  '/forgot-password',
+  passwordResetRateLimiter, // 3 password reset requests per hour
+  validate({ body: forgotPasswordSchema }),
+  userController.forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  passwordResetRateLimiter, // 3 password reset attempts per hour
+  validate({ body: resetPasswordSchema }),
+  userController.resetPassword
 );
 
 /**

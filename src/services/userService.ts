@@ -21,7 +21,9 @@ import {
   ResendVerificationData,
   ChangeUserRoleData,
   ToggleAccountStatusData,
-  BulkUserOperationData
+  BulkUserOperationData,
+  ForgotPasswordData,
+  ResetPasswordData
 } from '../schemas/userSchema';
 import logger from '../utils/logger';
 import { generateAndSendVerificationCode } from './mail.service';
@@ -649,6 +651,143 @@ class UserService {
     } catch (error) {
       logger.error('Error fetching user with role:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Forgot password - send reset token via email
+   */
+  async forgotPassword(forgotPasswordData: ForgotPasswordData): Promise<void> {
+    try {
+      const { email } = forgotPasswordData;
+
+      // Find user by email
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        logger.info('Password reset requested for non-existent email:', { email });
+        return;
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        throw new AuthenticationError('Account is deactivated', ErrorCode.ACCOUNT_DISABLED);
+      }
+
+      // Generate reset token
+      const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+      const resetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Update user with reset token
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+        },
+      });
+
+      // Send reset email
+      try {
+        const userName = user.firstName || user.username;
+        await this.sendPasswordResetEmail(
+          user.email,
+          userName,
+          resetToken
+        );
+        
+        logger.info('Password reset email sent successfully:', { 
+          userId: user.id, 
+          email: user.email,
+          resetToken 
+        });
+      } catch (emailError) {
+        logger.error('Failed to send password reset email:', emailError);
+        throw new ValidationError('Failed to send password reset email');
+      }
+    } catch (error) {
+      logger.error('Error in forgot password:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(resetPasswordData: ResetPasswordData): Promise<void> {
+    try {
+      const { email, resetToken, newPassword } = resetPasswordData;
+
+      // Find user by email
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        throw new AuthenticationError('Account is deactivated', ErrorCode.ACCOUNT_DISABLED);
+      }
+
+      // Check if reset token matches
+      if (user.passwordResetToken !== resetToken) {
+        throw new ValidationError('Invalid reset token', ErrorCode.TOKEN_INVALID);
+      }
+
+      // Check if reset token has expired
+      if (!user.passwordResetExpires || new Date() > user.passwordResetExpires) {
+        throw new ValidationError('Reset token has expired', ErrorCode.TOKEN_EXPIRED);
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update user password and clear reset token
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+          updatedAt: new Date(),
+        },
+      });
+
+      // Invalidate all existing sessions for security
+      await this.prisma.userSession.updateMany({
+        where: { userId: user.id },
+        data: { isActive: false },
+      });
+
+      logger.info('Password reset successfully:', { userId: user.id, email });
+    } catch (error) {
+      logger.error('Error resetting password:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send password reset email
+   */
+  private async sendPasswordResetEmail(email: string, userName: string, resetToken: string): Promise<void> {
+    try {
+      // Import email service dynamically to avoid circular dependencies
+      const { generateAndSendPasswordResetEmail } = await import('./mail.service');
+      
+      await generateAndSendPasswordResetEmail(
+        email,
+        userName,
+        resetToken
+      );
+    } catch (error) {
+      logger.error('Error sending password reset email:', error);
+      throw new ValidationError('Failed to send password reset email');
     }
   }
 
