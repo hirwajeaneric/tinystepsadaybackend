@@ -170,6 +170,21 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   };
 }
 
+export interface PaginatedResponseWithAnalytics<T> extends PaginatedResponse<T> {
+  analytics: {
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    verifiedUsers: number;
+    unverifiedUsers: number;
+    admins: number;
+    moderators: number;
+    instructors: number;
+    superAdmins: number;
+    regularUsers: number;
+  };
+}
+
 // Security Types
 export interface SecurityConfig {
   accessTokenExpiry: string;
