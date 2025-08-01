@@ -117,6 +117,9 @@ export interface UserSessionResponse {
   userAgent?: string;
   isActive: boolean;
   expiresAt: Date;
+  rememberMe: boolean;
+  refreshCount: number;
+  maxRefreshes: number;
   createdAt: Date;
 }
 
@@ -127,6 +130,9 @@ export interface CreateSessionData {
   ipAddress?: string;
   userAgent?: string;
   expiresAt: Date;
+  rememberMe: boolean;
+  refreshCount: number;
+  maxRefreshes: number;
 }
 
 // Token Types
@@ -195,6 +201,8 @@ export interface SecurityConfig {
   lockoutDuration: number;
   sessionTimeout: number;
   maxSessionsPerUser: number;
+  maxRefreshTokensWithoutRememberMe: number;
+  maxRefreshTokensWithRememberMe: number;
 }
 
 // Rate Limiting Types

@@ -3,8 +3,8 @@ import { SecurityConfig } from '../types/auth';
 // Security Configuration
 export const securityConfig: SecurityConfig = {
   // Token Configuration
-  accessTokenExpiry: process.env['ACCESS_TOKEN_EXPIRY'] || '15m',
-  refreshTokenExpiry: process.env['REFRESH_TOKEN_EXPIRY'] || '7d',
+  accessTokenExpiry: process.env['ACCESS_TOKEN_EXPIRY'] || '30m',
+  refreshTokenExpiry: process.env['REFRESH_TOKEN_EXPIRY'] || '14d',
   passwordResetExpiry: process.env['PASSWORD_RESET_EXPIRY'] || '1h',
   emailVerificationExpiry: process.env['EMAIL_VERIFICATION_EXPIRY'] || '24h',
   
@@ -15,6 +15,10 @@ export const securityConfig: SecurityConfig = {
   // Session Management
   sessionTimeout: parseInt(process.env['SESSION_TIMEOUT'] || '30'), // days
   maxSessionsPerUser: parseInt(process.env['MAX_SESSIONS_PER_USER'] || '5'),
+  
+  // Refresh Token Configuration
+  maxRefreshTokensWithoutRememberMe: parseInt(process.env['MAX_REFRESH_TOKENS_WITHOUT_REMEMBER_ME'] || '8'),
+  maxRefreshTokensWithRememberMe: parseInt(process.env['MAX_REFRESH_TOKENS_WITH_REMEMBER_ME'] || '10080'), // 14 days worth of refreshes (every 2 minutes)
 };
 
 // JWT Configuration

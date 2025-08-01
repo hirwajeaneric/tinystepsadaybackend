@@ -356,6 +356,20 @@ class UserService {
       const { CryptoUtils } = await import('../utils/security');
       const refreshTokenString = CryptoUtils.randomString(64);
 
+      // Determine remember me settings
+      const rememberMe = loginData.rememberMe === true;
+      const { securityConfig } = await import('../config/security');
+      
+      // Calculate max refreshes based on remember me choice
+      const maxRefreshes = rememberMe 
+        ? securityConfig.maxRefreshTokensWithRememberMe 
+        : securityConfig.maxRefreshTokensWithoutRememberMe;
+
+      // Calculate session expiry based on remember me choice
+      const sessionExpiry = rememberMe 
+        ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
+        : new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours (for 8 refreshes with 30-min tokens)
+
       // Update last login and create a new session
       const [, session] = await Promise.all([
         this.prisma.user.update({
@@ -369,7 +383,10 @@ class UserService {
             deviceInfo: userDeviceInfo || null,
             ipAddress: userIpAddress,
             userAgent: userAgent || null,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            expiresAt: sessionExpiry,
+            rememberMe: rememberMe,
+            refreshCount: 0,
+            maxRefreshes: maxRefreshes,
           },
         })
       ]);
@@ -378,7 +395,7 @@ class UserService {
       const { jwtConfig } = await import('../config/security');
       const jwt = await import('jsonwebtoken');
 
-      // Generate access token
+      // Generate access token (30 minutes)
       const accessToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -387,12 +404,12 @@ class UserService {
         sessionId: session.id,
         type: 'access'
       }, jwtConfig.secret, {
-        expiresIn: '15m',
+        expiresIn: '30m',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      // Generate JWT refresh token
+      // Generate JWT refresh token (14 days)
       const refreshToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -401,18 +418,23 @@ class UserService {
         sessionId: session.id,
         type: 'refresh'
       }, jwtConfig.secret, {
-        expiresIn: '7d',
+        expiresIn: '14d',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      logger.info('User authenticated successfully:', { userId: user.id, email: user.email });
+      logger.info('User authenticated successfully:', { 
+        userId: user.id, 
+        email: user.email, 
+        rememberMe: rememberMe,
+        maxRefreshes: maxRefreshes 
+      });
 
       return {
         user: this.toUserResponse(user),
         token: accessToken,
         refreshToken,
-        expiresIn: 15 * 60 // 15 minutes in seconds
+        expiresIn: 30 * 60 // 30 minutes in seconds
       };
     } catch (error) {
       logger.error('Error authenticating user:', error);
@@ -1000,14 +1022,30 @@ class UserService {
         throw new ValidationError('Invalid refresh token');
       }
 
-      // Verify session is still valid
+      // Verify session is still valid and check refresh limits
       const session = await this.prisma.userSession.findUnique({
         where: { id: payload.sessionId },
-        select: { isActive: true, expiresAt: true }
+        select: { 
+          isActive: true, 
+          expiresAt: true, 
+          refreshCount: true, 
+          maxRefreshes: true,
+          rememberMe: true 
+        }
       });
 
       if (!session || !session.isActive || new Date() > session.expiresAt) {
         throw new ValidationError('Session expired or invalid');
+      }
+
+      // Check if refresh limit has been reached
+      if (session.refreshCount >= session.maxRefreshes) {
+        // Deactivate the session
+        await this.prisma.userSession.update({
+          where: { id: payload.sessionId },
+          data: { isActive: false }
+        });
+        throw new ValidationError('Refresh token limit reached. Please log in again.');
       }
 
       // Get user information
@@ -1020,7 +1058,13 @@ class UserService {
         throw new ValidationError('User not found or inactive');
       }
 
-      // Generate new access token
+      // Increment refresh count
+      await this.prisma.userSession.update({
+        where: { id: payload.sessionId },
+        data: { refreshCount: { increment: 1 } }
+      });
+
+      // Generate new access token (30 minutes)
       const newAccessToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -1029,12 +1073,12 @@ class UserService {
         sessionId: payload.sessionId,
         type: 'access'
       }, jwtConfig.secret, {
-        expiresIn: '15m',
+        expiresIn: '30m',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      // Generate new refresh token
+      // Generate new refresh token (14 days)
       const newRefreshToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -1043,17 +1087,23 @@ class UserService {
         sessionId: payload.sessionId,
         type: 'refresh'
       }, jwtConfig.secret, {
-        expiresIn: '7d',
+        expiresIn: '14d',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      logger.info('Access token refreshed successfully:', { userId: user.id, sessionId: payload.sessionId });
+      logger.info('Access token refreshed successfully:', { 
+        userId: user.id, 
+        sessionId: payload.sessionId,
+        refreshCount: session.refreshCount + 1,
+        maxRefreshes: session.maxRefreshes,
+        rememberMe: session.rememberMe
+      });
 
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        expiresIn: 15 * 60 // 15 minutes in seconds
+        expiresIn: 30 * 60 // 30 minutes in seconds
       };
     } catch (error) {
       logger.error('Error refreshing access token:', error);
