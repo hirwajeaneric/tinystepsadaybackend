@@ -20,7 +20,7 @@ model User {
   username          String   @unique
   firstName         String?
   lastName          String?
-  password          String
+  password          String?  // Made optional for social auth users
   avatar            String?
   bio               String?
   role              UserRole @default(USER)
@@ -36,11 +36,43 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Social Authentication Fields
+  authProvider      AuthProvider? @default(EMAIL)
+  socialId          String?       // ID from social provider
+  socialEmail       String?       // Email from social provider
+  profileCompleted  Boolean       @default(false)
+  
+  // Social Account Linking
+  linkedAccounts    SocialAccount[]
+
   // Relations
   sessions          UserSession[]
   notifications     Notification[]
 
   @@map("users")
+}
+
+// Social Account Linking
+model SocialAccount {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String       @db.ObjectId
+  provider     AuthProvider
+  providerId   String       // ID from the social provider
+  providerEmail String?
+  displayName  String?
+  avatar       String?
+  accessToken  String?      // Encrypted access token
+  refreshToken String?      // Encrypted refresh token
+  expiresAt    DateTime?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("social_accounts")
 }
 
 model UserSession {
@@ -88,6 +120,16 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  FACEBOOK
+  GITHUB
+  LINKEDIN
+  TWITTER
+}
+
 enum NotificationType {
   INFO
   SUCCESS
@@ -96,4 +138,6 @@ enum NotificationType {
   AUTH_VERIFICATION
   PASSWORD_RESET
   ACCOUNT_UPDATE
+  SOCIAL_ACCOUNT_LINKED
+  SOCIAL_ACCOUNT_UNLINKED
 }

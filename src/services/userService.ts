@@ -346,7 +346,7 @@ class UserService {
         throw new AuthenticationError('Account is deactivated', ErrorCode.ACCOUNT_DISABLED);
       }
 
-      const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
+      const isPasswordValid = await bcrypt.compare(loginData.password, user.password || '');
 
       if (!isPasswordValid) {
         throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
@@ -459,7 +459,7 @@ class UserService {
         throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password || '');
 
       if (!isCurrentPasswordValid) {
         throw new AuthenticationError('Current password is incorrect', ErrorCode.INVALID_PASSWORD);

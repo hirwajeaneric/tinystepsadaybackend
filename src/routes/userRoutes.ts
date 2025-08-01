@@ -1,17 +1,17 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import userController from '../controllers/userController';
 import adminController from '../controllers/adminController';
-import { 
-  authenticate, 
-  requireAdmin, 
+import {
+  authenticate,
+  requireAdmin,
   requireModerator
 } from '../middleware/auth';
 import { validate } from '../middleware/validation';
-import { 
-  createUserSchema, 
-  updateUserSchema, 
-  loginSchema, 
-  changePasswordSchema, 
+import {
+  createUserSchema,
+  updateUserSchema,
+  loginSchema,
+  changePasswordSchema,
   getUsersQuerySchema,
   objectIdSchema,
   emailVerificationSchema,
@@ -33,130 +33,60 @@ import {
   adminRateLimiter,
   emailVerificationRateLimiter
 } from '../middleware/rateLimit';
+import socialAuthController from '../controllers/socialAuthController';
 
 const router = Router();
 
 // Public routes with specific rate limiting
-router.post(
-  '/register',
-  registrationRateLimiter, // 3 registration attempts per hour
-  validate({ body: createUserSchema }),
-  userController.createUser
-);
-
-router.post(
-  '/login',
-  authRateLimiter, // 5 auth attempts per 15 minutes
-  validate({ body: loginSchema }),
-  userController.loginUser
-);
+router.post('/register', registrationRateLimiter, validate({ body: createUserSchema }), userController.createUser);
+router.post('/login', authRateLimiter, validate({ body: loginSchema }), userController.loginUser);
 
 // Email verification routes (public)
-router.post(
-  '/verify-email',
-  emailVerificationRateLimiter, // Rate limit for verification attempts
-  validate({ body: emailVerificationSchema }),
-  userController.verifyEmail
-);
-
-router.post(
-  '/resend-verification',
-  emailVerificationRateLimiter, // Rate limit for resending verification
-  validate({ body: resendVerificationSchema }),
-  userController.resendVerificationEmail
-);
-
+router.post('/verify-email', emailVerificationRateLimiter, validate({ body: emailVerificationSchema }), userController.verifyEmail);
+router.post('/resend-verification', emailVerificationRateLimiter, validate({ body: resendVerificationSchema }), userController.resendVerificationEmail);
 // Password reset routes (public)
-router.post(
-  '/forgot-password',
-  passwordResetRateLimiter, // 3 password reset requests per hour
-  validate({ body: forgotPasswordSchema }),
-  userController.forgotPassword
-);
-
-router.post(
-  '/reset-password',
-  passwordResetRateLimiter, // 3 password reset attempts per hour
-  validate({ body: resetPasswordSchema }),
-  userController.resetPassword
-);
+router.post('/forgot-password', passwordResetRateLimiter, validate({ body: forgotPasswordSchema }), userController.forgotPassword);
+router.post('/reset-password', passwordResetRateLimiter, validate({ body: resetPasswordSchema }), userController.resetPassword);
 
 // Token refresh route (public)
-router.post(
-  '/refresh-token',
-  authRateLimiter, // 5 refresh attempts per 15 minutes
-  validate({ body: refreshTokenSchema }),
-  userController.refreshToken
-);
+router.post('/refresh-token', authRateLimiter, validate({ body: refreshTokenSchema }), userController.refreshToken);
+
+// OAuth callback routes (public)
+router.get('/auth/google/callback', socialAuthController.googleCallback as RequestHandler);
+router.get('/auth/apple/callback', socialAuthController.appleCallback as RequestHandler);
+
+// Social auth verification route (public)
+router.post('/auth/google/verify', socialAuthController.verifyGoogleToken as RequestHandler);
 
 /**
  * *********************************************************************
  * Protected routes (require authentication)
  * *********************************************************************
  */
-router.use(authenticate);
+router.use(authenticate as RequestHandler);
 
 // Current user routes (users can only access their own data)
-router.get('/me', userController.getCurrentUser);
+router.get('/me', userController.getCurrentUser as RequestHandler);
+router.put('/me', profileUpdateRateLimiter, validate({ body: updateUserSchema }), userController.updateCurrentUser as RequestHandler);
+router.post('/me/change-password', passwordResetRateLimiter, validate({ body: changePasswordSchema }), userController.changePassword as RequestHandler);
 
-router.put(
-  '/me',
-  profileUpdateRateLimiter, // 10 profile updates per 15 minutes
-  validate({ body: updateUserSchema }),
-  userController.updateCurrentUser
-);
+router.post('/me/deactivate', validate({ body: deactivateAccountSchema }), userController.deactivateCurrentUser as RequestHandler);
 
-router.post(
-  '/me/change-password',
-  passwordResetRateLimiter, // 3 password changes per hour
-  validate({ body: changePasswordSchema }),
-  userController.changePassword
-);
-
-router.post('/me/deactivate', 
-  validate({ body: deactivateAccountSchema }),
-  userController.deactivateCurrentUser
-);
+// Social auth management routes (require authentication)
+router.post('/auth/social/link', socialAuthController.linkSocialAccount as RequestHandler);
+router.delete('/auth/social/unlink/:provider', socialAuthController.unlinkSocialAccount as RequestHandler);
+router.get('/auth/social/accounts', socialAuthController.getLinkedSocialAccounts as RequestHandler);
 
 /**
  * *********************************************************************
  * Admin routes (for managing other users) with role-based authorization
  * *********************************************************************
  */
-router.get(
-  '/',
-  adminRateLimiter, // 100 admin operations per hour
-  requireModerator, // MODERATOR and above can read users
-  validate({ query: getUsersQuerySchema }),
-  userController.getUsers
-);
+router.get('/', adminRateLimiter, requireModerator as RequestHandler, validate({ query: getUsersQuerySchema }), userController.getUsers as RequestHandler);
+router.get('/:id', adminRateLimiter, requireModerator as RequestHandler, validate({ params: z.object({ id: objectIdSchema }) }), userController.getUserById as RequestHandler);
+router.put('/:id', adminRateLimiter, requireModerator as RequestHandler, validate({ params: z.object({ id: objectIdSchema }), body: updateUserSchema }), userController.updateUser as RequestHandler);
 
-router.get(
-  '/:id',
-  adminRateLimiter, // 100 admin operations per hour
-  requireModerator, // MODERATOR and above can read specific users
-  validate({ params: z.object({ id: objectIdSchema }) }),
-  userController.getUserById
-);
-
-router.put(
-  '/:id',
-  adminRateLimiter, // 100 admin operations per hour
-  requireModerator, // MODERATOR and above can update users
-  validate({ 
-    params: z.object({ id: objectIdSchema }),
-    body: updateUserSchema 
-  }),
-  userController.updateUser
-);
-
-router.delete(
-  '/:id',
-  adminRateLimiter, // 100 admin operations per hour
-  requireAdmin, // Only ADMIN and SUPER_ADMIN can delete users
-  validate({ params: z.object({ id: objectIdSchema }) }),
-  userController.deleteUser
-);
+router.delete('/:id', adminRateLimiter, requireAdmin as RequestHandler, validate({ params: z.object({ id: objectIdSchema }) }), userController.deleteUser as RequestHandler);
 
 /**
  * *********************************************************************
@@ -165,36 +95,10 @@ router.delete(
  */
 
 // Role management
-router.patch(
-  '/:userId/role',
-  adminRateLimiter,
-  requireAdmin, // Only ADMIN and SUPER_ADMIN can change roles
-  validate({ 
-    params: z.object({ userId: objectIdSchema }),
-    body: changeUserRoleSchema 
-  }),
-  adminController.changeUserRole
-);
-
+router.patch('/:userId/role', adminRateLimiter, requireAdmin as RequestHandler, validate({ params: z.object({ userId: objectIdSchema }), body: changeUserRoleSchema }), adminController.changeUserRole as RequestHandler);
 // Account activation/deactivation
-router.patch(
-  '/:userId/status',
-  adminRateLimiter,
-  requireAdmin, // Only ADMIN and SUPER_ADMIN can toggle account status
-  validate({ 
-    params: z.object({ userId: objectIdSchema }),
-    body: toggleAccountStatusSchema 
-  }),
-  adminController.toggleAccountStatus
-);
-
+router.patch('/:userId/status', adminRateLimiter, requireAdmin as RequestHandler, validate({ params: z.object({ userId: objectIdSchema }), body: toggleAccountStatusSchema }), adminController.toggleAccountStatus as RequestHandler);
 // Bulk operations
-router.post(
-  '/bulk',
-  adminRateLimiter,
-  requireAdmin, // Only ADMIN and SUPER_ADMIN can perform bulk operations
-  validate({ body: bulkUserOperationSchema }),
-  adminController.bulkUserOperation
-);
+router.post('/bulk', adminRateLimiter, requireAdmin as RequestHandler, validate({ body: bulkUserOperationSchema }), adminController.bulkUserOperation as RequestHandler);
 
 export default router;

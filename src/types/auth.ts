@@ -224,4 +224,94 @@ export interface ValidationError {
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
+}
+
+export interface SocialAuthData {
+  provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'GITHUB' | 'LINKEDIN' | 'TWITTER';
+  providerId: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+}
+
+export interface SocialAccountResponse {
+  id: string;
+  provider: string;
+  providerId: string;
+  providerEmail?: string;
+  displayName?: string;
+  avatar?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LinkSocialAccountData {
+  provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'GITHUB' | 'LINKEDIN' | 'TWITTER';
+  providerId: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+}
+
+export interface UnlinkSocialAccountData {
+  provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK' | 'GITHUB' | 'LINKEDIN' | 'TWITTER';
+}
+
+export interface SocialAuthResponse {
+  user: UserResponse;
+  token: string;
+  refreshToken: string;
+  expiresIn: number;
+  isNewUser: boolean;
+  profileCompleted: boolean;
+}
+
+export interface OAuthCallbackData {
+  code: string;
+  state?: string;
+  error?: string;
+}
+
+export interface SocialAuthConfig {
+  google: {
+    clientId: string;
+    clientSecret: string;
+    callbackUrl: string;
+  };
+  apple: {
+    clientId: string;
+    teamId: string;
+    keyId: string;
+    privateKey: string;
+    callbackUrl: string;
+  };
+  facebook: {
+    appId: string;
+    appSecret: string;
+    callbackUrl: string;
+  };
+  github: {
+    clientId: string;
+    clientSecret: string;
+    callbackUrl: string;
+  };
+  linkedin: {
+    clientId: string;
+    clientSecret: string;
+    callbackUrl: string;
+  };
+  twitter: {
+    consumerKey: string;
+    consumerSecret: string;
+    callbackUrl: string;
+  };
 } 
