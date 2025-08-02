@@ -27,60 +27,60 @@ class SocialAuthService {
     async authenticateWithSocialProvider(socialData: SocialAuthData, userIpAddress: string, userAgent: string | undefined, userDeviceInfo: string | undefined): Promise<SocialAuthResponse> {
         try {
             // Check if user exists with this social account
-                  let user = await this.prisma.user.findFirst({
-        where: {
-          OR: [
-            { socialId: socialData.providerId, authProvider: socialData.provider },
-            { email: socialData.email }
-          ]
-        },
-        include: {
-          linkedAccounts: true
-        }
-      });
+            let user = await this.prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { socialId: socialData.providerId, authProvider: socialData.provider },
+                        { email: socialData.email }
+                    ]
+                },
+                include: {
+                    linkedAccounts: true
+                }
+            });
 
-      let isNewUser = false;
+            let isNewUser = false;
 
-      if (!user) {
-        // Create new user
-        user = await this.createSocialUser(socialData);
-        isNewUser = true;
-      } else {
-        // Update existing user's social info if needed
-        await this.updateUserSocialInfo(user.id, socialData);
-      }
+            if (!user) {
+                // Create new user with default USER role
+                user = await this.createSocialUser(socialData);
+                isNewUser = true;
+            } else {
+                // Update existing user's social info if needed
+                await this.updateUserSocialInfo(user.id, socialData);
+            }
 
-      // Ensure user exists at this point
-      if (!user) {
-        throw new Error('Failed to create or find user');
-      }
+            // Ensure user exists at this point
+            if (!user) {
+                throw new Error('Failed to create or find user');
+            }
 
-      // Create or update social account
-      await this.upsertSocialAccount(user.id, socialData);
+            // Create or update social account
+            await this.upsertSocialAccount(user.id, socialData);
 
-      // Create session
-      const session = await this.createUserSession(user.id, userIpAddress, userAgent, userDeviceInfo);
+            // Create session
+            const session = await this.createUserSession(user.id, userIpAddress, userAgent, userDeviceInfo);
 
-                  // Generate tokens
-      const token = jwt.sign({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        sessionId: session.id
-      }, process.env['JWT_SECRET'] || 'fallback-secret', { 
-        expiresIn: '30m',
-        issuer: 'tinystepsaday',
-        audience: 'tinystepsaday-users'
-      });
-      
-      const refreshToken = jwt.sign({
-        userId: user.id,
-        sessionId: session.id
-      }, process.env['JWT_SECRET'] || 'fallback-secret', { 
-        expiresIn: '14d',
-        issuer: 'tinystepsaday',
-        audience: 'tinystepsaday-users'
-      });
+            // Generate tokens
+            const token = jwt.sign({
+                userId: user.id,
+                email: user.email,
+                role: user.role,
+                sessionId: session.id
+            }, process.env['JWT_SECRET'] || 'fallback-secret', { 
+                expiresIn: '30m',
+                issuer: 'tinystepsaday',
+                audience: 'tinystepsaday-users'
+            });
+            
+            const refreshToken = jwt.sign({
+                userId: user.id,
+                sessionId: session.id
+            }, process.env['JWT_SECRET'] || 'fallback-secret', { 
+                expiresIn: '14d',
+                issuer: 'tinystepsaday',
+                audience: 'tinystepsaday-users'
+            });
 
             // Convert to response format
             const userResponse = this.toUserResponse(user);
@@ -88,7 +88,8 @@ class SocialAuthService {
             logger.info('Social authentication successful:', {
                 userId: user.id,
                 provider: socialData.provider,
-                isNewUser
+                isNewUser,
+                role: user.role
             });
 
             return {
