@@ -333,14 +333,32 @@ class SocialAuthService {
      */
     async verifyGoogleToken(idToken: string): Promise<any> {
         try {
-            const client = new OAuth2Client(process.env['GOOGLE_CLIENT_ID']);
+            const googleClientId = process.env['GOOGLE_CLIENT_ID'];
+            
+            if (!googleClientId) {
+                logger.error('Google Client ID is not configured');
+                throw new AuthenticationError('Google OAuth is not properly configured', ErrorCode.INVALID_SOCIAL_TOKEN);
+            }
+
+            logger.info('Verifying Google token with client ID:', googleClientId);
+            
+            const client = new OAuth2Client(googleClientId);
             const ticket = await client.verifyIdToken({
                 idToken,
-                audience: process.env['GOOGLE_CLIENT_ID']
+                audience: googleClientId
             });
-            return ticket.getPayload();
+            
+            const payload = ticket.getPayload();
+            logger.info('Google token verification successful for user:', payload?.email);
+            
+            return payload;
         } catch (error) {
             logger.error('Google token verification failed:', error);
+            
+            if (error instanceof Error) {
+                throw new AuthenticationError(`Google token verification failed: ${error.message}`, ErrorCode.INVALID_SOCIAL_TOKEN);
+            }
+            
             throw new AuthenticationError('Invalid Google token', ErrorCode.INVALID_SOCIAL_TOKEN);
         }
     }
