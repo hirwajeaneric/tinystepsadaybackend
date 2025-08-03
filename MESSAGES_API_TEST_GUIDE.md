@@ -37,21 +37,17 @@ Content-Type: application/json
 ## Contact Messages API
 
 ### 1. Create Contact Message (Public)
-**Endpoint:** `POST /contact`
+**Endpoint:** `POST /api/messages/contact`
 
 **Description:** Create a new contact message (no authentication required)
 
 **Request Body:**
 ```json
 {
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "subject": "General Inquiry",
-  "message": "I have a question about your services.",
-  "category": "GENERAL",
-  "priority": "MEDIUM",
-  "source": "CONTACT_FORM",
-  "tags": ["inquiry", "general"]
+	"name": "Hirwa Jean Eric",
+  "email": "hirwajeric@gmail.com",
+  "subject": "Greatings",
+  "message": "I have a question about your services."
 }
 ```
 
@@ -92,13 +88,17 @@ Content-Type: application/json
 - ✅ Rate limiting (5 requests per 15 minutes)
 
 ### 2. Get Contact Messages (Protected)
-**Endpoint:** `GET /messages`
+**Endpoint:** `GET /api/messages/messages`
 
 **Description:** Retrieve contact messages with filtering and pagination
 
 **Query Parameters:**
 ```
 ?status=UNREAD&priority=HIGH&category=SUPPORT&search=urgent&page=1&limit=20
+```
+or
+```
+?status=all&priority=all&category=all&page=1&limit=20&source=all
 ```
 
 **Response (200):**
@@ -153,7 +153,7 @@ Content-Type: application/json
 - ✅ Insufficient permissions
 
 ### 3. Get Contact Message by ID (Protected)
-**Endpoint:** `GET /messages/:id`
+**Endpoint:** `GET /api/messages/messages/:id`
 
 **Description:** Retrieve a specific contact message by ID
 
@@ -209,7 +209,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 4. Update Contact Message (Protected)
-**Endpoint:** `PUT /messages/:id`
+**Endpoint:** `PUT /api/messages/messages/:id`
 
 **Description:** Update a contact message
 
@@ -258,7 +258,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 5. Delete Contact Message (Protected)
-**Endpoint:** `DELETE /messages/:id`
+**Endpoint:** `DELETE /api/messages/messages/:id`
 
 **Description:** Delete a contact message (ADMIN, SUPER_ADMIN only)
 
@@ -281,7 +281,7 @@ Content-Type: application/json
 ## Message Templates API
 
 ### 1. Create Message Template (Protected)
-**Endpoint:** `POST /templates`
+**Endpoint:** `POST /api/messages/templates`
 
 **Description:** Create a new message template
 
@@ -333,7 +333,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 2. Get Message Templates (Protected)
-**Endpoint:** `GET /templates`
+**Endpoint:** `GET /api/messages/templates`
 
 **Description:** Retrieve message templates
 
@@ -377,7 +377,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 3. Get Message Template by ID (Protected)
-**Endpoint:** `GET /templates/:id`
+**Endpoint:** `GET /api/messages/templates/:id`
 
 **Description:** Retrieve a specific message template
 
@@ -413,7 +413,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 4. Update Message Template (Protected)
-**Endpoint:** `PUT /templates/:id`
+**Endpoint:** `PUT /api/messages/templates/:id`
 
 **Description:** Update a message template
 
@@ -454,7 +454,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 5. Delete Message Template (Protected)
-**Endpoint:** `DELETE /templates/:id`
+**Endpoint:** `DELETE /api/messages/templates/:id`
 
 **Description:** Delete a message template (ADMIN, SUPER_ADMIN only)
 
@@ -477,7 +477,7 @@ Content-Type: application/json
 ## Statistics API
 
 ### 1. Get Message Statistics (Protected)
-**Endpoint:** `GET /messages/stats`
+**Endpoint:** `GET /api/messages/messages/stats`
 
 **Description:** Retrieve message statistics
 
@@ -531,7 +531,7 @@ Content-Type: application/json
 ## Bulk Operations
 
 ### 1. Bulk Update Messages (Protected)
-**Endpoint:** `PUT /messages/bulk/update`
+**Endpoint:** `PUT /api/messages/messages/bulk/update`
 
 **Description:** Update multiple messages at once
 
@@ -563,7 +563,7 @@ Content-Type: application/json
 - ✅ Unauthorized access
 
 ### 2. Bulk Delete Messages (Protected)
-**Endpoint:** `DELETE /messages/bulk/delete`
+**Endpoint:** `DELETE /api/messages/messages/bulk/delete`
 
 **Description:** Delete multiple messages at once (ADMIN, SUPER_ADMIN only)
 

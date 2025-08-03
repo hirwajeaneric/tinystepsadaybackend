@@ -53,8 +53,13 @@ export class MessageController {
       const dateFrom = validatedFilters.dateFrom ? new Date(validatedFilters.dateFrom) : undefined;
       const dateTo = validatedFilters.dateTo ? new Date(validatedFilters.dateTo) : undefined;
       
+      // Handle "all" values for enum filters
       const filters = {
         ...validatedFilters,
+        status: validatedFilters.status === 'all' ? undefined : validatedFilters.status,
+        priority: validatedFilters.priority === 'all' ? undefined : validatedFilters.priority,
+        category: validatedFilters.category === 'all' ? undefined : validatedFilters.category,
+        source: validatedFilters.source === 'all' ? undefined : validatedFilters.source,
         dateFrom,
         dateTo
       };

@@ -65,19 +65,33 @@ export const messageTemplateIdSchema = z.object({
   id: z.string().min(1, 'Template ID is required'),
 });
 
-// Filter and Search Schemas
+// Filter and Search Schemas - Updated to handle query parameters correctly
 export const messageFiltersSchema = z.object({
-  status: messageStatusSchema.optional(),
-  priority: messagePrioritySchema.optional(),
-  category: messageCategorySchema.optional(),
-  source: messageSourceSchema.optional(),
+  status: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    return val; // Keep original value for enum validation
+  }).optional(),
+  priority: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    return val; // Keep original value for enum validation
+  }).optional(),
+  category: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    return val; // Keep original value for enum validation
+  }).optional(),
+  source: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    return val; // Keep original value for enum validation
+  }).optional(),
   assignedTo: z.string().optional(),
   search: z.string().min(1).optional(),
   tags: z.array(z.string()).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
-  page: z.number().int().min(1).optional().default(1),
-  limit: z.number().int().min(1).max(100).optional().default(20),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'status', 'priority', 'category', 'source']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 export const messageStatsSchema = z.object({
@@ -87,8 +101,8 @@ export const messageStatsSchema = z.object({
 
 // Pagination Schema
 export const paginationSchema = z.object({
-  page: z.number().int().min(1).optional().default(1),
-  limit: z.number().int().min(1).max(100).optional().default(20),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
 // Bulk Operations Schema

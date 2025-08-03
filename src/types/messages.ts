@@ -111,15 +111,19 @@ export interface UpdateMessageTemplateRequest {
 
 // Filter and search types
 export interface MessageFilters {
-  status?: MessageStatus;
-  priority?: MessagePriority;
-  category?: MessageCategory;
-  source?: MessageSource;
+  status?: MessageStatus | string;
+  priority?: MessagePriority | string;
+  category?: MessageCategory | string;
+  source?: MessageSource | string;
   assignedTo?: string;
   search?: string;
   tags?: string[];
   dateFrom?: Date;
   dateTo?: Date;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface MessageStats {

@@ -1,4 +1,4 @@
-import { PrismaClient, MessageCategory } from '@prisma/client';
+import { PrismaClient, MessageCategory, MessageStatus, MessagePriority, MessageSource } from '@prisma/client';
 import { 
   CreateContactMessageRequest, 
   UpdateContactMessageRequest, 
@@ -60,11 +60,19 @@ export class MessageService {
     try {
       const where: any = {};
 
-      // Apply filters
-      if (filters.status) where.status = filters.status;
-      if (filters.priority) where.priority = filters.priority;
-      if (filters.category) where.category = filters.category;
-      if (filters.source) where.source = filters.source;
+      // Apply filters - handle string values and convert to proper enum types
+      if (filters.status && filters.status !== 'all') {
+        where.status = filters.status as MessageStatus;
+      }
+      if (filters.priority && filters.priority !== 'all') {
+        where.priority = filters.priority as MessagePriority;
+      }
+      if (filters.category && filters.category !== 'all') {
+        where.category = filters.category as MessageCategory;
+      }
+      if (filters.source && filters.source !== 'all') {
+        where.source = filters.source as MessageSource;
+      }
       if (filters.assignedTo) where.assignedTo = filters.assignedTo;
       if (filters.tags && filters.tags.length > 0) {
         where.tags = { hasSome: filters.tags };
@@ -85,6 +93,12 @@ export class MessageService {
           { tags: { hasSome: [filters.search] } },
         ];
       }
+
+      // Build orderBy clause
+      const orderBy: any = {};
+      const sortBy = filters.sortBy || 'createdAt';
+      const sortOrder = filters.sortOrder || 'desc';
+      orderBy[sortBy] = sortOrder;
 
       const [messages, total] = await Promise.all([
         prisma.contactMessage.findMany({
@@ -112,7 +126,7 @@ export class MessageService {
               orderBy: { createdAt: 'asc' },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy,
           skip: (page - 1) * limit,
           take: limit,
         }),
