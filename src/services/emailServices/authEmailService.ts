@@ -16,6 +16,7 @@ import {
 // Extended interfaces for authentication email types
 interface VerificationEmailData extends BaseEmailTemplateData {
   verificationCode: string;
+  verificationUrl: string;
 }
 
 interface PasswordResetEmailData extends BaseEmailTemplateData {
@@ -63,6 +64,7 @@ export const generateAndSendVerificationEmail = async (
       userEmail,
       verificationCode,
       imageUrl: getImageUrl(),
+      verificationUrl: `${getClientUrl()}/auth/verifyaccount?email=${encodeURIComponent(userEmail)}`,
     };
 
     const processedHtml = processTemplate(emailVerificationTemplate, templateData);
