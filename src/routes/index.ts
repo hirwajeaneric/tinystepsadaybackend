@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import userRoutes from './userRoutes';
+import messageRoutes from './messageRoutes';
 import database from '../utils/database';
 import { ApiResponse } from '../types';
 
@@ -51,5 +52,8 @@ router.get('/info', (_req: Request, res: Response) => {
 
 // Mount user routes
 router.use('/users', userRoutes);
+
+// Mount message routes
+router.use('/messages', messageRoutes);
 
 export default router;
