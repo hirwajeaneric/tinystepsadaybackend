@@ -99,86 +99,6 @@ const verifySession = async (sessionId: string): Promise<boolean> => {
 };
 
 /**
- * Main authentication middleware
- */
-export const authenticate = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const token = extractToken(req);
-
-    if (!token) {
-      throw new AuthenticationError('No token provided', 'TOKEN_MISSING');
-    }
-
-    const payload = verifyToken(token);
-
-    // Verify session is still valid
-    const isSessionValid = await verifySession(payload.sessionId);
-    if (!isSessionValid) {
-      throw new AuthenticationError('Session expired or invalid', 'SESSION_EXPIRED');
-    }
-
-    // Attach user info to request
-    req.user = payload;
-    req.sessionId = payload.sessionId;
-
-    next();
-  } catch (error) {
-    if (error instanceof AuthenticationError || error instanceof TokenError) {
-      res.status(401).json({
-        success: false,
-        error: error.code || 'AUTHENTICATION_ERROR',
-        message: error.message
-      });
-    } else {
-      logger.error('Authentication middleware error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'INTERNAL_SERVER_ERROR',
-        message: 'Authentication failed'
-      });
-    }
-  }
-};
-
-/**
- * Optional authentication middleware (doesn't fail if no token)
- */
-export const optionalAuth = async (
-  req: AuthenticatedRequest,
-  _res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const token = extractToken(req);
-
-    if (!token) {
-      return next();
-    }
-
-    const payload = verifyToken(token);
-
-    // Verify session is still valid
-    const isSessionValid = await verifySession(payload.sessionId);
-    if (!isSessionValid) {
-      return next();
-    }
-
-    // Attach user info to request
-    req.user = payload;
-    req.sessionId = payload.sessionId;
-
-    next();
-  } catch (error) {
-    // For optional auth, we just continue without user info
-    next();
-  }
-};
-
-/**
  * Role hierarchy - higher roles inherit permissions from lower roles
  */
 const ROLE_HIERARCHY = {
@@ -613,5 +533,202 @@ export const refreshToken = async (
         message: 'Error refreshing tokens'
       });
     }
+  }
+};
+
+/**
+ * Enhanced authentication middleware with automatic token refresh
+ * This middleware will automatically refresh expired access tokens if the refresh token is still valid
+ */
+export const authenticateWithAutoRefresh = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = extractToken(req);
+
+    if (!token) {
+      throw new AuthenticationError('No token provided', 'TOKEN_MISSING');
+    }
+
+    try {
+      // Try to verify the access token
+      const payload = verifyToken(token);
+      
+      // Verify session is still valid
+      const isSessionValid = await verifySession(payload.sessionId);
+      if (!isSessionValid) {
+        throw new AuthenticationError('Session expired or invalid', 'SESSION_EXPIRED');
+      }
+
+      // Token is valid, attach user info to request
+      req.user = payload;
+      req.sessionId = payload.sessionId;
+      
+      next();
+      return;
+    } catch (tokenError) {
+      // If token is expired, try to refresh it
+      if (tokenError instanceof TokenError && tokenError.code === 'TOKEN_EXPIRED') {
+        const refreshToken = req.headers['x-refresh-token'] as string;
+        
+        if (!refreshToken) {
+          throw new AuthenticationError('Access token expired and no refresh token provided', 'TOKEN_EXPIRED');
+        }
+
+        try {
+          // Verify refresh token
+          const refreshPayload = jwt.verify(refreshToken, jwtConfig.secret, {
+            algorithms: ['HS256'],
+            issuer: jwtConfig.issuer,
+            audience: jwtConfig.audience
+          }) as TokenPayload;
+
+          if (refreshPayload.type !== 'refresh') {
+            throw new AuthenticationError('Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+          }
+
+          // Verify session is still valid
+          const isSessionValid = await verifySession(refreshPayload.sessionId);
+          if (!isSessionValid) {
+            throw new AuthenticationError('Session expired or invalid', 'SESSION_EXPIRED');
+          }
+
+          // Generate new tokens
+          const newTokens = generateTokens({
+            userId: refreshPayload.userId,
+            email: refreshPayload.email,
+            username: refreshPayload.username,
+            role: refreshPayload.role,
+            sessionId: refreshPayload.sessionId
+          });
+
+          // Attach new tokens to response headers
+          res.setHeader('X-New-Access-Token', newTokens.accessToken);
+          res.setHeader('X-New-Refresh-Token', newTokens.refreshToken);
+          res.setHeader('X-Token-Expires-In', newTokens.expiresIn.toString());
+
+          // Attach user info to request
+          req.user = {
+            userId: refreshPayload.userId,
+            email: refreshPayload.email,
+            username: refreshPayload.username,
+            role: refreshPayload.role,
+            sessionId: refreshPayload.sessionId
+          };
+          req.sessionId = refreshPayload.sessionId;
+
+          logger.info('Token automatically refreshed for user:', { 
+            userId: refreshPayload.userId, 
+            sessionId: refreshPayload.sessionId 
+          });
+
+          next();
+          return;
+        } catch (refreshError) {
+          logger.error('Token refresh failed:', refreshError);
+          throw new AuthenticationError('Token refresh failed', 'REFRESH_FAILED');
+        }
+      }
+
+      // If it's not a token expiration error, re-throw it
+      throw tokenError;
+    }
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof TokenError) {
+      res.status(401).json({
+        success: false,
+        error: error.code || 'AUTHENTICATION_ERROR',
+        message: error.message
+      });
+    } else {
+      logger.error('Authentication middleware error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Authentication failed'
+      });
+    }
+  }
+};
+
+/**
+ * Standard authentication middleware (existing implementation)
+ */
+export const authenticate = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = extractToken(req);
+
+    if (!token) {
+      throw new AuthenticationError('No token provided', 'TOKEN_MISSING');
+    }
+
+    const payload = verifyToken(token);
+
+    // Verify session is still valid
+    const isSessionValid = await verifySession(payload.sessionId);
+    if (!isSessionValid) {
+      throw new AuthenticationError('Session expired or invalid', 'SESSION_EXPIRED');
+    }
+
+    // Attach user info to request
+    req.user = payload;
+    req.sessionId = payload.sessionId;
+
+    next();
+  } catch (error) {
+    if (error instanceof AuthenticationError || error instanceof TokenError) {
+      res.status(401).json({
+        success: false,
+        error: error.code || 'AUTHENTICATION_ERROR',
+        message: error.message
+      });
+    } else {
+      logger.error('Authentication middleware error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Authentication failed'
+      });
+    }
+  }
+};
+
+/**
+ * Optional authentication middleware (doesn't fail if no token)
+ */
+export const optionalAuth = async (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = extractToken(req);
+
+    if (!token) {
+      return next();
+    }
+
+    const payload = verifyToken(token);
+
+    // Verify session is still valid
+    const isSessionValid = await verifySession(payload.sessionId);
+    if (!isSessionValid) {
+      return next();
+    }
+
+    // Attach user info to request
+    req.user = payload;
+    req.sessionId = payload.sessionId;
+
+    next();
+  } catch (error) {
+    // For optional auth, we just continue without user info
+    next();
   }
 };
