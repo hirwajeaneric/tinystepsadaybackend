@@ -57,9 +57,19 @@ export const getUsersQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().max(100, 'Search term must be less than 100 characters').optional(),
-  role: z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
-  isActive: z.coerce.boolean().optional(),
-  isEmailVerified: z.coerce.boolean().optional(),
+  role: z.union([z.enum(['USER', 'MODERATOR', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN']), z.literal('all')]).optional(),
+  isActive: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val; // Keep original value if not recognized
+  }).optional(),
+  isEmailVerified: z.string().transform(val => {
+    if (val === 'all') return 'all';
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return val; // Keep original value if not recognized
+  }).optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'lastLogin', 'email', 'username']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc')
 });

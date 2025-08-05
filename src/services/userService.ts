@@ -1,33 +1,29 @@
 import bcrypt from 'bcryptjs';
 import { User as PrismaUser } from '@prisma/client';
 import database from '../utils/database';
-import { 
-  CreateUserData, 
-  UpdateUserData, 
-  UserResponse, 
-  LoginData, 
-  PaginatedResponse 
-} from '../types';
-import { 
-  NotFoundError, 
-  ConflictError, 
+import {
+  UserResponse,
+  CreateUserData,
+  UpdateUserData,
+  PaginatedResponseWithAnalytics,
+} from '../types/auth';
+import {
+  NotFoundError,
+  ConflictError,
   AuthenticationError,
   ValidationError,
 } from '../utils/errors';
 import { ErrorCode } from '../types/errors';
-import { 
-  GetUsersQueryData, 
-  EmailVerificationData, 
+import {
+  GetUsersQueryData,
+  EmailVerificationData,
   ResendVerificationData,
   ChangeUserRoleData,
   ToggleAccountStatusData,
   BulkUserOperationData,
-  ForgotPasswordData,
-  ResetPasswordData,
-  RefreshTokenData
 } from '../schemas/userSchema';
 import logger from '../utils/logger';
-import { 
+import {
   generateAndSendVerificationEmail,
   generateAndSendPasswordChangedEmail,
   generateAndSendWelcomeEmail,
@@ -89,11 +85,11 @@ class UserService {
           userName,
           verificationCode
         );
-        
-        logger.info('Verification email sent successfully:', { 
-          userId: user.id, 
+
+        logger.info('Verification email sent successfully:', {
+          userId: user.id,
           email: user.email,
-          verificationCode 
+          verificationCode
         });
       } catch (emailError) {
         logger.error('Failed to send verification email:', emailError);
@@ -107,10 +103,10 @@ class UserService {
           user.email,
           userName
         );
-        
-        logger.info('Welcome email sent successfully:', { 
-          userId: user.id, 
-          email: user.email 
+
+        logger.info('Welcome email sent successfully:', {
+          userId: user.id,
+          email: user.email
         });
       } catch (emailError) {
         logger.error('Failed to send welcome email:', emailError);
@@ -174,14 +170,14 @@ class UserService {
    * @param query - The query for the users.
    * @returns The users.
    */
-  async getUsers(query: GetUsersQueryData): Promise<PaginatedResponse<UserResponse>> {
+  async getUsers(query: GetUsersQueryData): Promise<PaginatedResponseWithAnalytics<UserResponse>> {
     try {
       const { page, limit, search, isActive, isEmailVerified, role, sortBy, sortOrder } = query;
       const skip = (page - 1) * limit;
-      
+
       // Build where clause for filtering
       const where: any = {};
-      
+
       // Add search functionality
       if (search && search.trim()) {
         const searchTerm = search.trim();
@@ -193,29 +189,22 @@ class UserService {
         ];
       }
 
-      // Add boolean filters
-      if (isActive !== undefined) {
+      // Add boolean filters - only apply if not "all" and not undefined
+      if (isActive !== undefined && isActive !== "all") {
         where.isActive = Boolean(isActive);
       }
 
-      if (isEmailVerified !== undefined) {
+      if (isEmailVerified !== undefined && isEmailVerified !== "all") {
         where.isEmailVerified = Boolean(isEmailVerified);
       }
 
-      // Add role filter
-      if (role) {
+      // Add role filter - only apply if not "all" and not undefined
+      if (role !== undefined && role !== "all") {
         where.role = role;
       }
 
       // Build orderBy clause
       const orderBy: any = { [sortBy]: sortOrder };
-
-      logger.info('Fetching users with filters:', {
-        where,
-        skip,
-        take: limit,
-        orderBy,
-      });
 
       // Get users and total count in parallel for better performance
       const [users, total] = await Promise.all([
@@ -228,15 +217,11 @@ class UserService {
         this.prisma.user.count({ where }),
       ]);
 
+      // Get analytics data for all users (not filtered)
+      const analytics = await this.getUserAnalytics();
+
       const userResponses = users.map((user: PrismaUser) => this.toUserResponse(user));
       const totalPages = Math.ceil(total / limit);
-
-      logger.info('Users fetched successfully:', {
-        total,
-        returned: users.length,
-        page,
-        totalPages,
-      });
 
       return {
         success: true,
@@ -248,6 +233,7 @@ class UserService {
           limit,
           totalPages,
         },
+        analytics,
       };
     } catch (error) {
       logger.error('Error fetching users:', error);
@@ -346,7 +332,7 @@ class UserService {
    * @param userDeviceInfo - The device information of the user.
    * @returns The authenticated user.
    */
-  async  authenticateUser(loginData: LoginData, userIpAddress: string, userAgent: string | undefined, userDeviceInfo: string | undefined): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
+  async  authenticateUser(loginData: any, userIpAddress: string, userAgent: string | undefined, userDeviceInfo: string | undefined): Promise<{ user: UserResponse; token: string; refreshToken: string; expiresIn: number }> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: loginData.email },
@@ -360,7 +346,7 @@ class UserService {
         throw new AuthenticationError('Account is deactivated', ErrorCode.ACCOUNT_DISABLED);
       }
 
-      const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
+      const isPasswordValid = await bcrypt.compare(loginData.password, user.password || '');
 
       if (!isPasswordValid) {
         throw new AuthenticationError('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
@@ -369,6 +355,20 @@ class UserService {
       // Generate a secure refresh token string for database storage
       const { CryptoUtils } = await import('../utils/security');
       const refreshTokenString = CryptoUtils.randomString(64);
+
+      // Determine remember me settings
+      const rememberMe = loginData.rememberMe === true;
+      const { securityConfig } = await import('../config/security');
+      
+      // Calculate max refreshes based on remember me choice
+      const maxRefreshes = rememberMe 
+        ? securityConfig.maxRefreshTokensWithRememberMe 
+        : securityConfig.maxRefreshTokensWithoutRememberMe;
+
+      // Calculate session expiry based on remember me choice
+      const sessionExpiry = rememberMe 
+        ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
+        : new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours (for 8 refreshes with 30-min tokens)
 
       // Update last login and create a new session
       const [, session] = await Promise.all([
@@ -383,7 +383,10 @@ class UserService {
             deviceInfo: userDeviceInfo || null,
             ipAddress: userIpAddress,
             userAgent: userAgent || null,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            expiresAt: sessionExpiry,
+            rememberMe: rememberMe,
+            refreshCount: 0,
+            maxRefreshes: maxRefreshes,
           },
         })
       ]);
@@ -391,8 +394,8 @@ class UserService {
       // Generate JWT tokens
       const { jwtConfig } = await import('../config/security');
       const jwt = await import('jsonwebtoken');
-      
-      // Generate access token
+
+      // Generate access token (30 minutes)
       const accessToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -401,12 +404,12 @@ class UserService {
         sessionId: session.id,
         type: 'access'
       }, jwtConfig.secret, {
-        expiresIn: '15m',
+        expiresIn: '30m',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      // Generate JWT refresh token
+      // Generate JWT refresh token (14 days)
       const refreshToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -415,18 +418,23 @@ class UserService {
         sessionId: session.id,
         type: 'refresh'
       }, jwtConfig.secret, {
-        expiresIn: '7d',
+        expiresIn: '14d',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      logger.info('User authenticated successfully:', { userId: user.id, email: user.email });
-      
+      logger.info('User authenticated successfully:', { 
+        userId: user.id, 
+        email: user.email, 
+        rememberMe: rememberMe,
+        maxRefreshes: maxRefreshes 
+      });
+
       return {
         user: this.toUserResponse(user),
         token: accessToken,
         refreshToken,
-        expiresIn: 15 * 60 // 15 minutes in seconds
+        expiresIn: 30 * 60 // 30 minutes in seconds
       };
     } catch (error) {
       logger.error('Error authenticating user:', error);
@@ -451,7 +459,7 @@ class UserService {
         throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND);
       }
 
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password || '');
 
       if (!isCurrentPasswordValid) {
         throw new AuthenticationError('Current password is incorrect', ErrorCode.INVALID_PASSWORD);
@@ -470,7 +478,7 @@ class UserService {
         const changeTime = new Date().toLocaleString();
         const ipAddress = 'Unknown'; // Could be passed from controller
         const deviceInfo = 'Unknown'; // Could be passed from controller
-        
+
         await generateAndSendPasswordChangedEmail(
           user.email,
           userName,
@@ -478,10 +486,10 @@ class UserService {
           ipAddress,
           deviceInfo
         );
-        
-        logger.info('Password change notification email sent successfully:', { 
-          userId: user.id, 
-          email: user.email 
+
+        logger.info('Password change notification email sent successfully:', {
+          userId: user.id,
+          email: user.email
         });
       } catch (emailError) {
         logger.error('Failed to send password change notification email:', emailError);
@@ -591,10 +599,10 @@ class UserService {
         verificationCode
       );
 
-      logger.info('Verification email resent successfully:', { 
-        userId: user.id, 
+      logger.info('Verification email resent successfully:', {
+        userId: user.id,
         email: user.email,
-        verificationCode 
+        verificationCode
       });
     } catch (error) {
       logger.error('Error resending verification email:', error);
@@ -623,7 +631,7 @@ class UserService {
       // Update user role
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           role: roleData.role,
           updatedAt: new Date()
         },
@@ -637,7 +645,7 @@ class UserService {
         const changedBy = 'Admin'; // Could be passed from controller
         const changeTime = new Date().toLocaleString();
         const reason = roleData.reason || 'No reason provided';
-        
+
         await generateAndSendRoleChangedEmail(
           targetUser.email,
           userName,
@@ -647,9 +655,9 @@ class UserService {
           changeTime,
           reason
         );
-        
-        logger.info('Role change notification email sent successfully:', { 
-          userId: targetUser.id, 
+
+        logger.info('Role change notification email sent successfully:', {
+          userId: targetUser.id,
           email: targetUser.email,
           oldRole,
           newRole
@@ -694,7 +702,7 @@ class UserService {
       // Update account status
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           isActive: statusData.isActive,
           updatedAt: new Date()
         },
@@ -708,7 +716,7 @@ class UserService {
         const changedBy = 'Admin'; // Could be passed from controller
         const changeTime = new Date().toLocaleString();
         const reason = statusData.reason || 'No reason provided';
-        
+
         await generateAndSendAccountStatusChangedEmail(
           targetUser.email,
           userName,
@@ -719,9 +727,9 @@ class UserService {
           reason,
           statusData.isActive
         );
-        
-        logger.info('Account status change notification email sent successfully:', { 
-          userId: targetUser.id, 
+
+        logger.info('Account status change notification email sent successfully:', {
+          userId: targetUser.id,
           email: targetUser.email,
           previousStatus,
           newStatus
@@ -848,7 +856,7 @@ class UserService {
    * @param forgotPasswordData - The data for the forgot password operation.
    * @returns A Promise that resolves when the operation is complete.
    */
-  async forgotPassword(forgotPasswordData: ForgotPasswordData): Promise<void> {
+  async forgotPassword(forgotPasswordData: any): Promise<void> {
     try {
       const { email } = forgotPasswordData;
 
@@ -889,11 +897,11 @@ class UserService {
           userName,
           resetToken
         );
-        
-        logger.info('Password reset email sent successfully:', { 
-          userId: user.id, 
+
+        logger.info('Password reset email sent successfully:', {
+          userId: user.id,
           email: user.email,
-          resetToken 
+          resetToken
         });
       } catch (emailError) {
         logger.error('Failed to send password reset email:', emailError);
@@ -910,7 +918,7 @@ class UserService {
    * @param resetPasswordData - The data for the reset password operation.
    * @returns A Promise that resolves when the operation is complete.
    */
-  async resetPassword(resetPasswordData: ResetPasswordData): Promise<void> {
+  async resetPassword(resetPasswordData: any): Promise<void> {
     try {
       const { email, resetToken, newPassword } = resetPasswordData;
 
@@ -977,7 +985,7 @@ class UserService {
     try {
       // Import email service dynamically to avoid circular dependencies
       const { generateAndSendPasswordResetEmail } = await import('./mail.service');
-      
+
       await generateAndSendPasswordResetEmail(
         email,
         userName,
@@ -995,7 +1003,7 @@ class UserService {
    * @returns The new access token and refresh token.
    * @throws Will throw an error if the refresh token is invalid or expired.
    */
-  async refreshAccessToken(refreshTokenData: RefreshTokenData): Promise<{ token: string; refreshToken: string; expiresIn: number }> {
+  async refreshAccessToken(refreshTokenData: any): Promise<{ token: string; refreshToken: string; expiresIn: number }> {
     try {
       const { refreshToken } = refreshTokenData;
 
@@ -1014,14 +1022,30 @@ class UserService {
         throw new ValidationError('Invalid refresh token');
       }
 
-      // Verify session is still valid
+      // Verify session is still valid and check refresh limits
       const session = await this.prisma.userSession.findUnique({
         where: { id: payload.sessionId },
-        select: { isActive: true, expiresAt: true }
+        select: { 
+          isActive: true, 
+          expiresAt: true, 
+          refreshCount: true, 
+          maxRefreshes: true,
+          rememberMe: true 
+        }
       });
 
       if (!session || !session.isActive || new Date() > session.expiresAt) {
         throw new ValidationError('Session expired or invalid');
+      }
+
+      // Check if refresh limit has been reached
+      if (session.refreshCount >= session.maxRefreshes) {
+        // Deactivate the session
+        await this.prisma.userSession.update({
+          where: { id: payload.sessionId },
+          data: { isActive: false }
+        });
+        throw new ValidationError('Refresh token limit reached. Please log in again.');
       }
 
       // Get user information
@@ -1034,7 +1058,13 @@ class UserService {
         throw new ValidationError('User not found or inactive');
       }
 
-      // Generate new access token
+      // Increment refresh count
+      await this.prisma.userSession.update({
+        where: { id: payload.sessionId },
+        data: { refreshCount: { increment: 1 } }
+      });
+
+      // Generate new access token (30 minutes)
       const newAccessToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -1043,12 +1073,12 @@ class UserService {
         sessionId: payload.sessionId,
         type: 'access'
       }, jwtConfig.secret, {
-        expiresIn: '15m',
+        expiresIn: '30m',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      // Generate new refresh token
+      // Generate new refresh token (14 days)
       const newRefreshToken = jwt.sign({
         userId: user.id,
         email: user.email,
@@ -1057,21 +1087,96 @@ class UserService {
         sessionId: payload.sessionId,
         type: 'refresh'
       }, jwtConfig.secret, {
-        expiresIn: '7d',
+        expiresIn: '14d',
         issuer: jwtConfig.issuer,
         audience: jwtConfig.audience
       });
 
-      logger.info('Access token refreshed successfully:', { userId: user.id, sessionId: payload.sessionId });
+      logger.info('Access token refreshed successfully:', { 
+        userId: user.id, 
+        sessionId: payload.sessionId,
+        refreshCount: session.refreshCount + 1,
+        maxRefreshes: session.maxRefreshes,
+        rememberMe: session.rememberMe
+      });
 
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        expiresIn: 15 * 60 // 15 minutes in seconds
+        expiresIn: 30 * 60 // 30 minutes in seconds
       };
     } catch (error) {
       logger.error('Error refreshing access token:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Get user analytics data
+   */
+  private async getUserAnalytics(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    verifiedUsers: number;
+    unverifiedUsers: number;
+    admins: number;
+    moderators: number;
+    instructors: number;
+    superAdmins: number;
+    regularUsers: number;
+  }> {
+    try {
+      // Get all counts in parallel for better performance
+      const [
+        totalUsers,
+        activeUsers,
+        verifiedUsers,
+        admins,
+        moderators,
+        instructors,
+        superAdmins,
+      ] = await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { isActive: true } }),
+        this.prisma.user.count({ where: { isEmailVerified: true } }),
+        this.prisma.user.count({ where: { role: 'ADMIN' } }),
+        this.prisma.user.count({ where: { role: 'MODERATOR' } }),
+        this.prisma.user.count({ where: { role: 'INSTRUCTOR' } }),
+        this.prisma.user.count({ where: { role: 'SUPER_ADMIN' } }),
+      ]);
+
+      const inactiveUsers = totalUsers - activeUsers;
+      const unverifiedUsers = totalUsers - verifiedUsers;
+      const regularUsers = totalUsers - admins - moderators - instructors - superAdmins;
+
+      return {
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+        verifiedUsers,
+        unverifiedUsers,
+        admins,
+        moderators,
+        instructors,
+        superAdmins,
+        regularUsers,
+      };
+    } catch (error) {
+      logger.error('Error fetching user analytics:', error);
+      // Return default values if analytics fail
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        verifiedUsers: 0,
+        unverifiedUsers: 0,
+        admins: 0,
+        moderators: 0,
+        instructors: 0,
+        superAdmins: 0,
+        regularUsers: 0,
+      };
     }
   }
 

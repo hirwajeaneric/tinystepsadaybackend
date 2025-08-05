@@ -9,6 +9,8 @@ import {
   ForgotPasswordData,
   ResetPasswordData,
   RefreshTokenData,
+  ResendVerificationData,
+  EmailVerificationData,
 } from '../schemas/userSchema';
 
 class UserController {
@@ -372,8 +374,8 @@ class UserController {
    */
   async verifyEmail(req: Request, res: Response): Promise<void> {
     try {
-      const { token } = req.body;
-      await userService.verifyEmail(token);
+      const verificationData: EmailVerificationData = req.body;
+      await userService.verifyEmail(verificationData);
 
       res.status(200).json({
         success: true,
@@ -402,8 +404,8 @@ class UserController {
    */
   async resendVerificationEmail(req: Request, res: Response): Promise<void> {
     try {
-      const { email } = req.body;
-      await userService.resendVerificationEmail(email);
+      const resendData: ResendVerificationData = req.body;
+      await userService.resendVerificationEmail(resendData);
 
       res.status(200).json({
         success: true,

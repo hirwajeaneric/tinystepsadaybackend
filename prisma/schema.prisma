@@ -20,7 +20,7 @@ model User {
   username          String   @unique
   firstName         String?
   lastName          String?
-  password          String
+  password          String?  // Made optional for social auth users
   avatar            String?
   bio               String?
   role              UserRole @default(USER)
@@ -36,11 +36,48 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Social Authentication Fields
+  authProvider      AuthProvider? @default(EMAIL)
+  socialId          String?       // ID from social provider
+  socialEmail       String?       // Email from social provider
+  profileCompleted  Boolean       @default(false)
+  
+  // Social Account Linking
+  linkedAccounts    SocialAccount[]
+
   // Relations
   sessions          UserSession[]
   notifications     Notification[]
+  
+  // Message System Relations
+  assignedMessages  ContactMessage[] @relation("AssignedMessages")
+  messageReplies    MessageReply[]   @relation("MessageReplies")
+  createdTemplates  MessageTemplate[] @relation("CreatedTemplates")
 
   @@map("users")
+}
+
+// Social Account Linking
+model SocialAccount {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String       @db.ObjectId
+  provider     AuthProvider
+  providerId   String       // ID from the social provider
+  providerEmail String?
+  displayName  String?
+  avatar       String?
+  accessToken  String?      // Encrypted access token
+  refreshToken String?      // Encrypted refresh token
+  expiresAt    DateTime?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("social_accounts")
 }
 
 model UserSession {
@@ -52,6 +89,9 @@ model UserSession {
   userAgent    String?
   isActive     Boolean  @default(true)
   expiresAt    DateTime
+  rememberMe   Boolean  @default(false)
+  refreshCount Int      @default(0)
+  maxRefreshes Int      @default(8)
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -76,6 +116,66 @@ model Notification {
   @@map("notifications")
 }
 
+// Messages System
+model ContactMessage {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String
+  subject     String
+  message     String
+  status      MessageStatus       @default(UNREAD)
+  priority    MessagePriority     @default(MEDIUM)
+  category    MessageCategory     @default(GENERAL)
+  source      MessageSource       @default(CONTACT_FORM)
+  tags        String[]            @default([])
+  ipAddress   String?
+  userAgent   String?
+  readAt      DateTime?
+  repliedAt   DateTime?
+  assignedTo  String?             @db.ObjectId
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  replies     MessageReply[]
+  assignedUser User?              @relation("AssignedMessages", fields: [assignedTo], references: [id])
+
+  @@map("contact_messages")
+}
+
+model MessageReply {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  messageId   String        @db.ObjectId
+  content     String
+  sentBy      ReplySender   @default(ADMIN)
+  sentByUser  String?       @db.ObjectId
+  attachments String[]      @default([])
+  createdAt   DateTime      @default(now())
+
+  // Relations
+  message     ContactMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User?         @relation("MessageReplies", fields: [sentByUser], references: [id])
+
+  @@map("message_replies")
+}
+
+model MessageTemplate {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  subject     String
+  content     String
+  category    MessageCategory @default(GENERAL)
+  isDefault   Boolean         @default(false)
+  createdBy   String?         @db.ObjectId
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  createdByUser User?         @relation("CreatedTemplates", fields: [createdBy], references: [id])
+
+  @@map("message_templates")
+}
+
 // Enums
 enum UserRole {
   USER
@@ -83,6 +183,16 @@ enum UserRole {
   INSTRUCTOR
   ADMIN
   SUPER_ADMIN
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  FACEBOOK
+  GITHUB
+  LINKEDIN
+  TWITTER
 }
 
 enum NotificationType {
@@ -93,4 +203,42 @@ enum NotificationType {
   AUTH_VERIFICATION
   PASSWORD_RESET
   ACCOUNT_UPDATE
+  SOCIAL_ACCOUNT_LINKED
+  SOCIAL_ACCOUNT_UNLINKED
+}
+
+// Message System Enums
+enum MessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum MessagePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MessageCategory {
+  GENERAL
+  SUPPORT
+  MENTORSHIP
+  BILLING
+  TECHNICAL
+  FEEDBACK
+}
+
+enum MessageSource {
+  CONTACT_FORM
+  EMAIL
+  PHONE
+  CHAT
+}
+
+enum ReplySender {
+  ADMIN
+  USER
 }

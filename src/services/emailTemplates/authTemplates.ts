@@ -80,6 +80,34 @@ export const emailVerificationTemplate = `
             margin: 20px 0;
             color: #856404;
         }
+        .verification-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 40px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 30px 0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .verification-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .manual-link {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -99,8 +127,17 @@ export const emailVerificationTemplate = `
             
             <p>Enter this code on the verification page to activate your account.</p>
             
+            <a href="{{verificationUrl}}" class="verification-button">
+                Go to Verification Page
+            </a>
+            
             <div class="warning">
                 <strong>Important:</strong> This verification code will expire in 24 hours for security reasons.
+            </div>
+            
+            <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
+            <div class="manual-link">
+                {{verificationUrl}}
             </div>
             
             <p>If you didn't create an account with Tiny Steps A Day, you can safely ignore this email.</p>
