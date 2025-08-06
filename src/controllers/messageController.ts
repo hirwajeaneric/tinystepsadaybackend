@@ -354,6 +354,43 @@ export class MessageController {
     }
   }
 
+  async createMessageReply(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { content } = req.body;
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        const response: MessageResponse = {
+          success: false,
+          message: 'User not authenticated',
+        };
+        res.status(401).json(response);
+        return;
+      }
+
+      const reply = await messageService.createMessageReply(id!, content, userId);
+
+      const response: MessageResponse = {
+        success: true,
+        message: 'Reply sent successfully',
+        data: reply,
+      };
+
+      res.status(201).json(response);
+    } catch (error: any) {
+      logger.error('Error creating message reply:', error);
+      
+      const response: MessageResponse = {
+        success: false,
+        message: 'Failed to send reply',
+        error: error.message || 'Internal server error',
+      };
+
+      res.status(400).json(response);
+    }
+  }
+
   async deleteMessageTemplate(req: Request, res: Response): Promise<void> {
     try {
       const { id } = messageTemplateIdSchema.parse(req.params);

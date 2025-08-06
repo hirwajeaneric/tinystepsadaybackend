@@ -46,6 +46,13 @@ router.delete(
   messageController.deleteContactMessage.bind(messageController) as RequestHandler
 );
 
+// Message replies
+router.post(
+  '/messages/:id/replies', 
+  authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
+  messageController.createMessageReply.bind(messageController) as RequestHandler
+);
+
 // Bulk operations
 router.post(
   '/messages/bulk/update', 

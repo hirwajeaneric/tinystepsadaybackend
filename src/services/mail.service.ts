@@ -28,6 +28,13 @@ export {
   generateAndSendSubscriptionCancelledEmail
 } from './emailServices/paymentEmailService';
 
+export {
+  generateAndSendContactConfirmationEmail,
+  generateAndSendNewMessageNotificationEmail,
+  generateAndSendReplyNotificationEmail,
+  generateAndSendReplySentNotificationEmail
+} from './emailServices/messageEmailService';
+
 // Legacy functions for backward compatibility
 import { generateAndSendVerificationEmail } from './emailServices/authEmailService';
 export const sendVerificationCode = generateAndSendVerificationEmail;

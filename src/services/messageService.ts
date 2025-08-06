@@ -1,4 +1,10 @@
 import { PrismaClient, MessageCategory, MessageStatus, MessagePriority, MessageSource } from '@prisma/client';
+import {
+  generateAndSendContactConfirmationEmail,
+  generateAndSendNewMessageNotificationEmail,
+  generateAndSendReplyNotificationEmail,
+  generateAndSendReplySentNotificationEmail
+} from './mail.service';
 import { 
   CreateContactMessageRequest, 
   UpdateContactMessageRequest, 
@@ -47,6 +53,53 @@ export class MessageService {
           },
         },
       });
+
+      // Send email notifications
+      try {
+        // Send confirmation email to the user
+        await generateAndSendContactConfirmationEmail(
+          data.email,
+          data.name,
+          data.subject,
+          data.message,
+          message.id
+        );
+
+        // Get management users for notification
+        const managementUsers = await prisma.user.findMany({
+          where: {
+            role: {
+              in: ['ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR']
+            },
+            isActive: true
+          },
+          select: {
+            email: true
+          }
+        });
+
+        const managementEmails = managementUsers.map(user => user.email);
+
+        // Send notification to management users
+        if (managementEmails.length > 0) {
+          await generateAndSendNewMessageNotificationEmail(
+            managementEmails,
+            {
+              name: data.name,
+              email: data.email,
+              subject: data.subject,
+              message: data.message,
+              category: data.category || 'GENERAL',
+              priority: data.priority || 'MEDIUM',
+              source: 'CONTACT_FORM'
+            },
+            message.id
+          );
+        }
+      } catch (error) {
+        logger.error('Failed to send email notifications for new contact message:', error);
+        // Don't throw error to avoid breaking the message creation
+      }
 
       logger.info(`Contact message created: ${message.id}`);
       return message;
@@ -290,6 +343,135 @@ export class MessageService {
   }
 
   // Message Templates
+  async createMessageReply(
+    messageId: string,
+    content: string,
+    userId: string
+  ): Promise<any> {
+    try {
+      // Get the original message
+      const originalMessage = await prisma.contactMessage.findUnique({
+        where: { id: messageId },
+        include: {
+          replies: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
+
+      if (!originalMessage) {
+        throw new Error('Message not found');
+      }
+
+      // Get the user who is sending the reply
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Create the reply
+      const reply = await prisma.messageReply.create({
+        data: {
+          messageId,
+          content,
+          sentByUser: userId,
+          sentBy: 'ADMIN',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // Update the original message status to replied
+      await prisma.contactMessage.update({
+        where: { id: messageId },
+        data: {
+          status: 'REPLIED',
+          repliedAt: new Date(),
+        },
+      });
+
+      // Send email notifications
+      try {
+        // Send notification to original sender
+        await generateAndSendReplyNotificationEmail(
+          originalMessage.email,
+          originalMessage.name,
+          content,
+          `${user.firstName} ${user.lastName}`,
+          originalMessage.subject,
+          messageId
+        );
+
+        // Get management users for notification
+        const managementUsers = await prisma.user.findMany({
+          where: {
+            role: {
+              in: ['ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR']
+            },
+            isActive: true,
+            id: { not: userId } // Exclude the user who sent the reply
+          },
+          select: {
+            email: true
+          }
+        });
+
+        const managementEmails = managementUsers.map(u => u.email);
+
+        // Send notification to other management users
+        if (managementEmails.length > 0) {
+          await generateAndSendReplySentNotificationEmail(
+            managementEmails,
+            {
+              originalSenderName: originalMessage.name,
+              originalSenderEmail: originalMessage.email,
+              replyContent: content,
+              replySenderName: `${user.firstName} ${user.lastName}`,
+              originalMessageSubject: originalMessage.subject
+            },
+            messageId
+          );
+        }
+      } catch (error) {
+        logger.error('Failed to send email notifications for reply:', error);
+        // Don't throw error to avoid breaking the reply creation
+      }
+
+      logger.info(`Reply created for message ${messageId} by user ${userId}`);
+      return reply;
+    } catch (error) {
+      logger.error('Error creating message reply:', error);
+      throw error;
+    }
+  }
+
   async createMessageTemplate(data: CreateMessageTemplateRequest, userId?: string): Promise<MessageTemplate> {
     try {
       // If this template is set as default, unset other defaults in the same category
