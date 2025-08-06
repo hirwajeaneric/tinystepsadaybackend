@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import userRoutes from './userRoutes';
 import messageRoutes from './messageRoutes';
+import subscriberRoutes from './subscriberRoutes';
 import database from '../utils/database';
 import { ApiResponse } from '../types';
 
@@ -43,6 +44,13 @@ router.get('/info', (_req: Request, res: Response) => {
           register: 'POST /api/users/register',
           login: 'POST /api/users/login',
         },
+        subscribers: {
+          subscribe: 'POST /api/subscribers/subscribe',
+          unsubscribe: 'POST /api/subscribers/unsubscribe',
+          check: 'GET /api/subscribers/check/:email',
+          list: 'GET /api/subscribers (admin)',
+          stats: 'GET /api/subscribers/stats (admin)',
+        },
       },
     },
   };
@@ -55,5 +63,8 @@ router.use('/users', userRoutes);
 
 // Mount message routes
 router.use('/messages', messageRoutes);
+
+// Mount subscriber routes
+router.use('/subscribers', subscriberRoutes);
 
 export default router;

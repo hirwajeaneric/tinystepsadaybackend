@@ -242,3 +242,35 @@ enum ReplySender {
   ADMIN
   USER
 }
+
+// Subscriber Management
+model Subscriber {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  email         String           @unique
+  subscribingTo SubscribeType
+  item          Json?            // For Book Publish subscriptions
+  isActive      Boolean          @default(true)
+  ipAddress     String?
+  userAgent     String?
+  unsubscribedAt DateTime?
+  unsubscribeReason UnsubscribeReason?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("subscribers")
+}
+
+enum UnsubscribeReason {
+  TOO_MANY_EMAILS
+  NOT_RELEVANT
+  SPAM
+  PRIVACY_CONCERNS
+  NO_LONGER_INTERESTED
+  OTHER
+}
+
+enum SubscribeType {
+  FOOTER
+  MODAL
+  BOOK_PUBLISH
+}
