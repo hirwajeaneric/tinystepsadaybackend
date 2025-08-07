@@ -53,6 +53,9 @@ model User {
   assignedMessages  ContactMessage[] @relation("AssignedMessages")
   messageReplies    MessageReply[]   @relation("MessageReplies")
   createdTemplates  MessageTemplate[] @relation("CreatedTemplates")
+  
+  // File Management Relations
+  uploadedFiles     File[]          @relation("UploadedFiles")
 
   @@map("users")
 }
@@ -273,4 +276,39 @@ enum SubscribeType {
   FOOTER
   MODAL
   BOOK_PUBLISH
+}
+
+// File Management System
+model File {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  url         String
+  alt         String?
+  type        FileType
+  caption     String?
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int      // File size in bytes
+  width       Int?     // For images/videos
+  height      Int?     // For images/videos
+  duration    Int?     // For videos (in seconds)
+  uploadedBy  String?  @db.ObjectId
+  isPublic    Boolean  @default(true)
+  tags        String[] @default([])
+  metadata    Json?    // Additional metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  uploadedByUser User? @relation("UploadedFiles", fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
 }

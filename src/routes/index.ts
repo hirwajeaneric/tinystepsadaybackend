@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import userRoutes from './userRoutes';
 import messageRoutes from './messageRoutes';
 import subscriberRoutes from './subscriberRoutes';
+import fileRoutes from './fileRoutes';
 import database from '../utils/database';
 import { ApiResponse } from '../types';
 
@@ -51,6 +52,20 @@ router.get('/info', (_req: Request, res: Response) => {
           list: 'GET /api/subscribers (admin)',
           stats: 'GET /api/subscribers/stats (admin)',
         },
+        files: {
+          create: 'POST /api/files',
+          list: 'GET /api/files',
+          get: 'GET /api/files/:id',
+          update: 'PUT /api/files/:id',
+          delete: 'DELETE /api/files/:id',
+          search: 'GET /api/files/search',
+          statistics: 'GET /api/files/statistics',
+          myFiles: 'GET /api/files/my-files',
+          byType: 'GET /api/files/type/:type',
+          uploadUrl: 'POST /api/files/upload-url',
+          bulk: 'POST /api/files/bulk (moderator+)',
+          byUser: 'GET /api/files/user/:userId (admin)',
+        },
       },
     },
   };
@@ -66,5 +81,8 @@ router.use('/messages', messageRoutes);
 
 // Mount subscriber routes
 router.use('/subscribers', subscriberRoutes);
+
+// Mount file routes
+router.use('/files', fileRoutes);
 
 export default router;

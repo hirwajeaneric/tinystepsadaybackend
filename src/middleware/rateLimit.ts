@@ -112,6 +112,87 @@ export const emailVerificationRateLimiter = rateLimit({
   }
 });
 
+// File management rate limiter
+export const fileRateLimiter = rateLimit({
+  windowMs: rateLimitConfig.file.windowMs,
+  max: rateLimitConfig.file.max,
+  message: {
+    success: false,
+    error: 'FILE_RATE_LIMIT_EXCEEDED',
+    message: rateLimitConfig.file.message
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    logger.warn('File rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.url,
+      method: req.method
+    });
+    
+    res.status(429).json({
+      success: false,
+      error: 'FILE_RATE_LIMIT_EXCEEDED',
+      message: rateLimitConfig.file.message
+    });
+  }
+});
+
+// File upload rate limiter
+export const fileUploadRateLimiter = rateLimit({
+  windowMs: rateLimitConfig.fileUpload.windowMs,
+  max: rateLimitConfig.fileUpload.max,
+  message: {
+    success: false,
+    error: 'FILE_UPLOAD_RATE_LIMIT_EXCEEDED',
+    message: rateLimitConfig.fileUpload.message
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    logger.warn('File upload rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.url,
+      method: req.method
+    });
+    
+    res.status(429).json({
+      success: false,
+      error: 'FILE_UPLOAD_RATE_LIMIT_EXCEEDED',
+      message: rateLimitConfig.fileUpload.message
+    });
+  }
+});
+
+// File search rate limiter
+export const fileSearchRateLimiter = rateLimit({
+  windowMs: rateLimitConfig.fileSearch.windowMs,
+  max: rateLimitConfig.fileSearch.max,
+  message: {
+    success: false,
+    error: 'FILE_SEARCH_RATE_LIMIT_EXCEEDED',
+    message: rateLimitConfig.fileSearch.message
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    logger.warn('File search rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.url,
+      method: req.method
+    });
+    
+    res.status(429).json({
+      success: false,
+      error: 'FILE_SEARCH_RATE_LIMIT_EXCEEDED',
+      message: rateLimitConfig.fileSearch.message
+    });
+  }
+});
+
 // User registration rate limiter
 export const registrationRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour

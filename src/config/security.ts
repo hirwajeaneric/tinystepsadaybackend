@@ -70,6 +70,27 @@ export const rateLimitConfig = {
     max: 5, // limit each IP to 5 email verification requests per hour
     message: 'Too many email verification attempts, please try again later.',
   },
+  
+  // File management rate limiting
+  file: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 file operations per windowMs
+    message: 'Too many file operations, please try again later.',
+  },
+  
+  // File upload rate limiting
+  fileUpload: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20, // limit each IP to 20 file uploads per hour
+    message: 'Too many file uploads, please try again later.',
+  },
+  
+  // File search rate limiting
+  fileSearch: {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 50, // limit each IP to 50 file searches per windowMs
+    message: 'Too many file searches, please try again later.',
+  },
 };
 
 // CORS Configuration
