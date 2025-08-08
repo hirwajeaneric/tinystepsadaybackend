@@ -77,15 +77,11 @@ class FileController {
    */
   async getFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const query = req.query as any;
+      const query = (req as any).validatedQuery || req.query as any;
       const result = await fileService.getFiles(query);
 
-      res.status(200).json({
-        success: true,
-        message: 'Files retrieved successfully',
-        data: result
-      });
-    } catch (error: any) {
+      res.status(200).json(result);
+    } catch (error) {
       res.status(500).json({
         success: false,
         error: 'INTERNAL_SERVER_ERROR',
@@ -380,6 +376,147 @@ class FileController {
         success: false,
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to generate upload URL'
+      });
+    }
+  }
+
+  /**
+   * Get files by MIME type
+   */
+  async getFilesByMimeType(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { mimeType } = req.params;
+      const { limit = 20 } = req.query;
+      
+      if (!mimeType) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_MIME_TYPE',
+          message: 'MIME type is required'
+        });
+        return;
+      }
+
+      const files = await fileService.getFilesByMimeType(mimeType, Number(limit));
+
+      res.status(200).json({
+        success: true,
+        message: 'Files retrieved successfully',
+        data: files
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve files by MIME type'
+      });
+    }
+  }
+
+  /**
+   * Get files by size range
+   */
+  async getFilesBySizeRange(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { minSize, maxSize, limit = 20 } = req.query;
+      
+      if (!minSize || !maxSize) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_SIZE_PARAMETERS',
+          message: 'Both minSize and maxSize are required'
+        });
+        return;
+      }
+
+      const files = await fileService.getFilesBySizeRange(
+        Number(minSize), 
+        Number(maxSize), 
+        Number(limit)
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Files retrieved successfully',
+        data: files
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve files by size range'
+      });
+    }
+  }
+
+  /**
+   * Get files by date range
+   */
+  async getFilesByDateRange(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { startDate, endDate, limit = 20 } = req.query;
+      
+      if (!startDate || !endDate) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_DATE_PARAMETERS',
+          message: 'Both startDate and endDate are required'
+        });
+        return;
+      }
+
+      const files = await fileService.getFilesByDateRange(
+        new Date(startDate as string), 
+        new Date(endDate as string), 
+        Number(limit)
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Files retrieved successfully',
+        data: files
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve files by date range'
+      });
+    }
+  }
+
+  /**
+   * Get files by tags
+   */
+  async getFilesByTags(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { tags, limit = 20 } = req.query;
+      
+      if (!tags) {
+        res.status(400).json({
+          success: false,
+          error: 'MISSING_TAGS',
+          message: 'Tags parameter is required'
+        });
+        return;
+      }
+
+      const tagsArray = Array.isArray(tags) 
+        ? tags.map(tag => String(tag))
+        : [String(tags)];
+
+      const files = await fileService.getFilesByTags(tagsArray, Number(limit));
+
+      res.status(200).json({
+        success: true,
+        message: 'Files retrieved successfully',
+        data: files
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve files by tags'
       });
     }
   }

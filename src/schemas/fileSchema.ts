@@ -82,15 +82,25 @@ export const getFilesQuerySchema = z.object({
     z.literal('all')
   ]).optional(),
   uploadedBy: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId format').optional(),
-  isPublic: z.string().transform(val => {
+  isPublic: z.union([
+    z.literal('true'),
+    z.literal('false'),
+    z.literal('all')
+  ]).transform(val => {
     if (val === 'all') return 'all';
     if (val === 'true') return true;
     if (val === 'false') return false;
     return val;
   }).optional(),
-  tags: z.string().transform(val => val ? val.split(',').map(tag => tag.trim()) : []).optional(),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'filename', 'size', 'originalName']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc')
+  tags: z.string().transform(val => val ? val.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : []).optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'filename', 'size', 'originalName', 'type', 'mimeType']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  // Additional flexible filters
+  minSize: z.coerce.number().int().positive().optional(),
+  maxSize: z.coerce.number().int().positive().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  mimeType: z.string().max(100, 'MIME type must be less than 100 characters').optional(),
 });
 
 // MongoDB ObjectId schema for files

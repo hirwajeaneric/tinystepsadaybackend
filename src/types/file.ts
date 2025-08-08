@@ -65,22 +65,30 @@ export interface GetFilesQueryData {
   uploadedBy?: string;
   isPublic?: boolean | 'all';
   tags?: string[];
-  sortBy?: 'createdAt' | 'updatedAt' | 'filename' | 'size' | 'originalName';
+  sortBy?: 'createdAt' | 'updatedAt' | 'filename' | 'size' | 'originalName' | 'type' | 'mimeType';
   sortOrder?: 'asc' | 'desc';
+  // Additional flexible filters
+  minSize?: number;
+  maxSize?: number;
+  startDate?: string;
+  endDate?: string;
+  mimeType?: string;
 }
 
 // Paginated response for files
 export interface PaginatedFileResponse {
-  files: FileResponse[];
+  success: boolean;
+  message: string;
+  data: FileResponse[];
   pagination: {
+    total: number;
     page: number;
     limit: number;
-    total: number;
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
   };
-  analytics?: {
+  analytics: {
     totalFiles: number;
     totalSize: number;
     filesByType: Record<FileType, number>;

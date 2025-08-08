@@ -66,6 +66,30 @@ router.get(
 );
 
 router.get(
+  '/mime-type/:mimeType',
+  fileRateLimiter,
+  fileController.getFilesByMimeType as RequestHandler
+);
+
+router.get(
+  '/size-range',
+  fileRateLimiter,
+  fileController.getFilesBySizeRange as RequestHandler
+);
+
+router.get(
+  '/date-range',
+  fileRateLimiter,
+  fileController.getFilesByDateRange as RequestHandler
+);
+
+router.get(
+  '/tags',
+  fileRateLimiter,
+  fileController.getFilesByTags as RequestHandler
+);
+
+router.get(
   '/:id',
   fileRateLimiter,
   validate({ params: z.object({ id: fileObjectIdSchema }) }),

@@ -91,89 +91,143 @@ class FileService {
    * Get files with pagination and filtering
    */
   async getFiles(query: GetFilesQueryData): Promise<PaginatedFileResponse> {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      type,
-      uploadedBy,
-      isPublic,
-      tags,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = query;
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        type,
+        uploadedBy,
+        isPublic,
+        tags,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        // Additional flexible filters
+        minSize,
+        maxSize,
+        startDate,
+        endDate,
+        mimeType,
+      } = query;
 
-    const skip = (page - 1) * limit;
+      // Ensure page and limit are numbers
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause
-    const where: any = {};
+      // Build where clause for filtering
+      const where: any = {};
 
-    if (search) {
-      where.OR = [
-        { filename: { contains: search, mode: 'insensitive' } },
-        { originalName: { contains: search, mode: 'insensitive' } },
-        { caption: { contains: search, mode: 'insensitive' } },
-        { alt: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+      // Add search functionality with improved search
+      if (search && search.trim()) {
+        const searchTerm = search.trim();
+        where.OR = [
+          { filename: { contains: searchTerm, mode: 'insensitive' } },
+          { originalName: { contains: searchTerm, mode: 'insensitive' } },
+          { caption: { contains: searchTerm, mode: 'insensitive' } },
+          { alt: { contains: searchTerm, mode: 'insensitive' } },
+          { tags: { has: searchTerm } }, // Search in tags
+        ];
+      }
 
-    if (type && type !== 'all') {
-      where.type = type;
-    }
+      // Add type filter - only apply if not "all" and not undefined
+      if (type !== undefined && type !== "all") {
+        where.type = type;
+      }
 
-    if (uploadedBy) {
-      where.uploadedBy = uploadedBy;
-    }
+      // Add uploadedBy filter
+      if (uploadedBy) {
+        where.uploadedBy = uploadedBy;
+      }
 
-    if (isPublic !== undefined && isPublic !== 'all') {
-      where.isPublic = isPublic;
-    }
+      // Add public/private filter - only apply if not "all" and not undefined
+      if (isPublic !== undefined && isPublic !== "all") {
+        where.isPublic = Boolean(isPublic);
+      }
 
-    if (tags && tags.length > 0) {
-      where.tags = {
-        hasSome: tags,
-      };
-    }
+      // Add tags filter
+      if (tags && tags.length > 0) {
+        where.tags = {
+          hasSome: tags,
+        };
+      }
 
-    // Get total count
-    const total = await this.prisma.file.count({ where });
+      // Add size range filtering
+      if (minSize !== undefined || maxSize !== undefined) {
+        where.size = {};
+        if (minSize !== undefined) {
+          where.size.gte = Number(minSize);
+        }
+        if (maxSize !== undefined) {
+          where.size.lte = Number(maxSize);
+        }
+      }
 
-    // Get files
-    const files = await this.prisma.file.findMany({
-      where,
-      include: {
-        uploadedByUser: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+      // Add date range filtering
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) {
+          where.createdAt.gte = new Date(startDate);
+        }
+        if (endDate) {
+          where.createdAt.lte = new Date(endDate);
+        }
+      }
+
+      // Add MIME type filtering
+      if (mimeType) {
+        where.mimeType = { contains: mimeType, mode: 'insensitive' };
+      }
+
+      // Build orderBy clause
+      const orderBy: any = { [sortBy]: sortOrder };
+
+      // Get files and total count in parallel for better performance
+      const [files, total] = await Promise.all([
+        this.prisma.file.findMany({
+          where,
+          include: {
+            uploadedByUser: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
+          orderBy,
+          skip,
+          take: limitNum,
+        }),
+        this.prisma.file.count({ where }),
+      ]);
+
+      // Get analytics data for all files (not filtered)
+      const analytics = await this.getFileAnalytics();
+
+      const fileResponses = files.map(file => this.toFileResponse(file));
+      const totalPages = Math.ceil(total / limitNum);
+
+      return {
+        success: true,
+        message: 'Files retrieved successfully',
+        data: fileResponses,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
         },
-      },
-      orderBy: { [sortBy]: sortOrder },
-      skip,
-      take: limit,
-    });
-
-    const totalPages = Math.ceil(total / limit);
-
-    // Get analytics
-    const analytics = await this.getFileAnalytics();
-
-    return {
-      files: files.map(file => this.toFileResponse(file)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-      analytics,
-    };
+        analytics,
+      };
+    } catch (error) {
+      logger.error('Error fetching files:', error);
+      throw error;
+    }
   }
 
   /**
@@ -408,7 +462,7 @@ class FileService {
   }
 
   /**
-   * Get files by type
+   * Get files by type with pagination
    */
   async getFilesByType(type: FileType, limit = 10): Promise<FileResponse[]> {
     const files = await this.prisma.file.findMany({
@@ -432,7 +486,7 @@ class FileService {
   }
 
   /**
-   * Search files
+   * Search files with enhanced search capabilities
    */
   async searchFiles(searchTerm: string, limit = 20): Promise<FileResponse[]> {
     const files = await this.prisma.file.findMany({
@@ -443,6 +497,7 @@ class FileService {
           { caption: { contains: searchTerm, mode: 'insensitive' } },
           { alt: { contains: searchTerm, mode: 'insensitive' } },
           { tags: { has: searchTerm } },
+          { mimeType: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       include: {
@@ -469,6 +524,118 @@ class FileService {
   async getFilesByUser(userId: string, limit = 20): Promise<FileResponse[]> {
     const files = await this.prisma.file.findMany({
       where: { uploadedBy: userId },
+      include: {
+        uploadedByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return files.map(file => this.toFileResponse(file));
+  }
+
+  /**
+   * Get files by MIME type
+   */
+  async getFilesByMimeType(mimeType: string, limit = 20): Promise<FileResponse[]> {
+    const files = await this.prisma.file.findMany({
+      where: { 
+        mimeType: { contains: mimeType, mode: 'insensitive' } 
+      },
+      include: {
+        uploadedByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return files.map(file => this.toFileResponse(file));
+  }
+
+  /**
+   * Get files by size range
+   */
+  async getFilesBySizeRange(minSize: number, maxSize: number, limit = 20): Promise<FileResponse[]> {
+    const files = await this.prisma.file.findMany({
+      where: {
+        size: {
+          gte: minSize,
+          lte: maxSize,
+        },
+      },
+      include: {
+        uploadedByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return files.map(file => this.toFileResponse(file));
+  }
+
+  /**
+   * Get files by date range
+   */
+  async getFilesByDateRange(startDate: Date, endDate: Date, limit = 20): Promise<FileResponse[]> {
+    const files = await this.prisma.file.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        uploadedByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return files.map(file => this.toFileResponse(file));
+  }
+
+  /**
+   * Get files by tags
+   */
+  async getFilesByTags(tags: string[], limit = 20): Promise<FileResponse[]> {
+    const files = await this.prisma.file.findMany({
+      where: {
+        tags: {
+          hasSome: tags,
+        },
+      },
       include: {
         uploadedByUser: {
           select: {
