@@ -9,13 +9,13 @@ const fileSchema = z.object({
     .max(2048, 'URL must be less than 2048 characters'),
   alt: z
     .string()
-    .max(255, 'Alt text must be less than 255 characters')
-    .optional(),
+    .min(1, 'Alt text is required')
+    .max(255, 'Alt text must be less than 255 characters'),
   type: z.nativeEnum(FileType),
   caption: z
     .string()
-    .max(500, 'Caption must be less than 500 characters')
-    .optional(),
+    .min(1, 'Caption is required')
+    .max(500, 'Caption must be less than 500 characters'),
   filename: z
     .string()
     .min(1, 'Filename is required')
@@ -121,8 +121,8 @@ export const fileUploadSchema = z.object({
   mimeType: z.string().min(1, 'MIME type is required'),
   size: z.number().int().positive('File size must be positive'),
   type: z.nativeEnum(FileType),
-  alt: z.string().max(255).optional(),
-  caption: z.string().max(500).optional(),
+  alt: z.string().min(1, 'Alt text is required').max(255, 'Alt text must be less than 255 characters'),
+  caption: z.string().min(1, 'Caption is required').max(500, 'Caption must be less than 500 characters'),
   isPublic: z.boolean().default(true),
   tags: z.array(z.string().max(50)).max(20).default([]),
   metadata: z.record(z.string(), z.any()).optional(),

@@ -26,7 +26,7 @@ class FileService {
   async createFile(fileData: CreateFileData, uploadedBy?: string): Promise<FileResponse> {
     try {
       // Generate a unique filename if not provided
-      const filename = fileData.filename || this.generateUniqueFilename(fileData.originalName);
+      const filename = fileData.filename || this.generateUniqueFilename(fileData.originalName, fileData.alt);
 
       const file = await this.prisma.file.create({
         data: {
@@ -657,10 +657,28 @@ class FileService {
   /**
    * Private helper methods
    */
-  private generateUniqueFilename(originalName: string): string {
+  private generateUniqueFilename(originalName: string, alt?: string): string {
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const extension = originalName.split('.').pop() || '';
+    
+    // If alt text is provided, use it to create a SEO-friendly filename
+    if (alt && alt.trim()) {
+      // Clean the alt text for filename use
+      const cleanAlt = alt
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+        .trim()
+        .substring(0, 50); // Limit length to 50 characters
+      
+      if (cleanAlt) {
+        return `${cleanAlt}_${timestamp}_${randomString}.${extension}`;
+      }
+    }
+    
+    // Fallback to original naming if no alt text or invalid alt text
     return `${timestamp}_${randomString}.${extension}`;
   }
 
