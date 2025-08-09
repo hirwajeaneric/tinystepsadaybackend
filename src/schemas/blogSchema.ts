@@ -66,6 +66,7 @@ export const blogPostQuerySchema = z.object({
   search: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED", "SCHEDULED"]).optional(),
   category: z.string().optional(),
+  tag: z.string().optional(),
   author: z.string().optional(),
   isFeatured: z.boolean().optional(),
   page: z.number().int().min(1).default(1),

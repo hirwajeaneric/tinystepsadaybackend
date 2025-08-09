@@ -629,7 +629,7 @@ export class BlogService {
 
   // Public methods
   async getPublicPosts(query: BlogPostQuery) {
-    const { search, category, author, isFeatured, page, limit, sortBy, sortOrder } = query
+    const { search, category, tag, author, isFeatured, page, limit, sortBy, sortOrder } = query
     const skip = (page - 1) * limit
 
     const where: any = {
@@ -648,6 +648,16 @@ export class BlogService {
     if (category) {
       where.category = {
         slug: category
+      }
+    }
+
+    if (tag) {
+      where.tags = {
+        some: {
+          tag: {
+            slug: tag
+          }
+        }
       }
     }
 
