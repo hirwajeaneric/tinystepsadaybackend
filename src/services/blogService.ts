@@ -635,11 +635,8 @@ export class BlogService {
     // Build the base where clause for published posts
     const where: any = {}
 
-    // Check for published posts - either status is PUBLISHED or isPublished is true
-    where.OR = [
-      { status: "PUBLISHED" },
-      { isPublished: true }
-    ]
+    // Only show published posts
+    where.status = "PUBLISHED"
 
     // Add search filter if provided
     if (search) {
@@ -746,8 +743,7 @@ export class BlogService {
     const post = await prisma.blogPost.findUnique({
       where: {
         slug,
-        status: "PUBLISHED",
-        isPublished: true
+        status: "PUBLISHED"
       },
       include: {
         author: {
@@ -772,6 +768,7 @@ export class BlogService {
     }
 
     return this.formatBlogPost(post)
+    // return post;
   }
 
   async getPublicComments(query: BlogCommentQuery) {
@@ -850,7 +847,6 @@ export class BlogService {
       commentsCount: post.commentsCount,
       sharesCount: post.sharesCount,
       isFeatured: post.isFeatured,
-      isPublished: post.isPublished,
       publishedAt: post.publishedAt,
       seoTitle: post.seoTitle,
       seoDescription: post.seoDescription,

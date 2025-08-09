@@ -64,7 +64,7 @@ export class BlogController {
       if (!slug) {
         return res.status(400).json({ error: "Post slug is required" })
       }
-      const post = await blogService.getPostBySlug(slug)
+      const post = await blogService.getPostBySlug(slug);
       return res.json(post)
     } catch (error) {
       return handleError(error, res)
