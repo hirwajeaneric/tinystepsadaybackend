@@ -3,6 +3,7 @@ import userRoutes from './userRoutes';
 import messageRoutes from './messageRoutes';
 import subscriberRoutes from './subscriberRoutes';
 import fileRoutes from './fileRoutes';
+import blogRoutes from './blogRoutes';
 import database from '../utils/database';
 import { ApiResponse } from '../types';
 
@@ -66,6 +67,31 @@ router.get('/info', (_req: Request, res: Response) => {
           bulk: 'POST /api/files/bulk (moderator+)',
           byUser: 'GET /api/files/user/:userId (admin)',
         },
+        blog: {
+          // Public endpoints
+          publicPosts: 'GET /api/blog/public/posts',
+          publicPost: 'GET /api/blog/public/posts/:slug',
+          publicComments: 'GET /api/blog/public/comments',
+          // Protected endpoints
+          posts: 'GET /api/blog/posts (auth required)',
+          createPost: 'POST /api/blog/posts (auth required)',
+          updatePost: 'PUT /api/blog/posts/:id (auth required)',
+          deletePost: 'DELETE /api/blog/posts/:id (auth required)',
+          categories: 'GET /api/blog/categories (auth required)',
+          createCategory: 'POST /api/blog/categories (admin/editor)',
+          updateCategory: 'PUT /api/blog/categories/:id (admin/editor)',
+          deleteCategory: 'DELETE /api/blog/categories/:id (admin/editor)',
+          tags: 'GET /api/blog/tags (auth required)',
+          createTag: 'POST /api/blog/tags (admin/editor)',
+          updateTag: 'PUT /api/blog/tags/:id (admin/editor)',
+          deleteTag: 'DELETE /api/blog/tags/:id (admin/editor)',
+          comments: 'GET /api/blog/comments (auth required)',
+          createComment: 'POST /api/blog/comments (auth required)',
+          updateComment: 'PUT /api/blog/comments/:id (auth required)',
+          deleteComment: 'DELETE /api/blog/comments/:id (auth required)',
+          toggleLike: 'POST /api/blog/likes (auth required)',
+          checkLike: 'GET /api/blog/likes/:postId (auth required)',
+        },
       },
     },
   };
@@ -84,5 +110,8 @@ router.use('/subscribers', subscriberRoutes);
 
 // Mount file routes
 router.use('/files', fileRoutes);
+
+// Mount blog routes
+router.use('/blog', blogRoutes);
 
 export default router;
