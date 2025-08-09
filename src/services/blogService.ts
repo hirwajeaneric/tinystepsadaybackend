@@ -632,46 +632,77 @@ export class BlogService {
     const { search, category, tag, author, isFeatured, page, limit, sortBy, sortOrder } = query
     const skip = (page - 1) * limit
 
-    const where: any = {
-      status: "PUBLISHED",
-      isPublished: true
-    }
+    // Build the base where clause for published posts
+    const where: any = {}
 
+    // Check for published posts - either status is PUBLISHED or isPublished is true
+    where.OR = [
+      { status: "PUBLISHED" },
+      { isPublished: true }
+    ]
+
+    // Add search filter if provided
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-        { excerpt: { contains: search, mode: 'insensitive' } },
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { content: { contains: search, mode: 'insensitive' } },
+            { excerpt: { contains: search, mode: 'insensitive' } },
+          ]
+        }
       ]
     }
 
-    if (category) {
-      where.category = {
-        slug: category
+    // Add category filter if provided
+    if (category && category !== "all") {
+      if (!where.AND) {
+        where.AND = []
       }
+      where.AND.push({
+        category: {
+          slug: category
+        }
+      })
     }
 
-    if (tag) {
-      where.tags = {
-        some: {
-          tag: {
-            slug: tag
+    // Add tag filter if provided
+    if (tag && tag !== "all") {
+      if (!where.AND) {
+        where.AND = []
+      }
+      where.AND.push({
+        tags: {
+          some: {
+            tag: {
+              slug: tag
+            }
           }
         }
-      }
+      })
     }
 
+    // Add author filter if provided
     if (author) {
-      where.author = {
-        OR: [
-          { firstName: { contains: author, mode: 'insensitive' } },
-          { lastName: { contains: author, mode: 'insensitive' } },
-        ]
+      if (!where.AND) {
+        where.AND = []
       }
+      where.AND.push({
+        author: {
+          OR: [
+            { firstName: { contains: author, mode: 'insensitive' } },
+            { lastName: { contains: author, mode: 'insensitive' } },
+          ]
+        }
+      })
     }
 
+    // Add featured filter if provided
     if (isFeatured !== undefined) {
-      where.isFeatured = isFeatured
+      if (!where.AND) {
+        where.AND = []
+      }
+      where.AND.push({ isFeatured })
     }
 
     const [posts, total] = await Promise.all([

@@ -37,7 +37,7 @@ export class BlogController {
 
   async getPosts(req: Request, res: Response) {
     try {
-      const query = blogPostQuerySchema.parse(req.query)
+      const query = (req as any).validatedQuery || blogPostQuerySchema.parse(req.query)
       const result = await blogService.getPosts(query)
       return res.json(result)
     } catch (error) {
@@ -348,7 +348,7 @@ export class BlogController {
   // Public endpoints
   async getPublicPosts(req: Request, res: Response) {
     try {
-      const query = blogPostQuerySchema.parse(req.query)
+      const query = (req as any).validatedQuery || blogPostQuerySchema.parse(req.query)
       const result = await blogService.getPublicPosts(query)
       return res.json(result)
     } catch (error) {

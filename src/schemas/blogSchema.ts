@@ -69,10 +69,19 @@ export const blogPostQuerySchema = z.object({
   tag: z.string().optional(),
   author: z.string().optional(),
   isFeatured: z.boolean().optional(),
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(10),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt", "publishedAt", "title", "views", "likesCount", "commentsCount"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
+}).transform((data) => {
+  // Handle "all" filter for category and tag
+  if (data.category === "all") {
+    data.category = undefined
+  }
+  if (data.tag === "all") {
+    data.tag = undefined
+  }
+  return data
 })
 
 export const blogCommentQuerySchema = z.object({
