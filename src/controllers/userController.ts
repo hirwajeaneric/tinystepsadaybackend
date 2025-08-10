@@ -28,11 +28,11 @@ class UserController {
         data: result
       });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      if (error.message === 'Email already exists' || error.code === 'EMAIL_ALREADY_EXISTS') {
         res.status(409).json({
           success: false,
-          error: 'DUPLICATE_USER',
-          message: 'User with this email or username already exists'
+          error: 'EMAIL_ALREADY_EXISTS',
+          message: 'User with this email already exists'
         });
         return;
       }

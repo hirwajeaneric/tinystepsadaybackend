@@ -1,4 +1,5 @@
 import { ErrorType } from '../types';
+import { Response } from 'express';
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -86,4 +87,31 @@ export const createErrorFromPrisma = (error: any): AppError => {
   }
   
   return new DatabaseError(error.message || 'Database operation failed', 'DATABASE_ERROR');
+};
+
+export const handleError = (error: any, res: Response) => {
+  console.error('Error:', error);
+  
+  if (error instanceof AppError) {
+    return res.status(error.statusCode).json({
+      success: false,
+      error: error.code,
+      message: error.message
+    });
+  }
+  
+  if (error.name === 'ZodError') {
+    return res.status(400).json({
+      success: false,
+      error: 'VALIDATION_ERROR',
+      message: 'Validation failed',
+      details: error.errors
+    });
+  }
+  
+  return res.status(500).json({
+    success: false,
+    error: 'INTERNAL_SERVER_ERROR',
+    message: 'An unexpected error occurred'
+  });
 };

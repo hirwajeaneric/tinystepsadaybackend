@@ -30,6 +30,27 @@ router.get(
   authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
   messageController.getContactMessages.bind(messageController) as RequestHandler
 );
+
+// Statistics - MUST come before /messages/:id to avoid route conflicts
+router.get(
+  '/messages/stats', 
+  authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
+  messageController.getMessageStats.bind(messageController) as RequestHandler
+);
+
+// Bulk operations - MUST come before /messages/:id to avoid route conflicts
+router.post(
+  '/messages/bulk/update', 
+  authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
+  messageController.bulkUpdateMessages.bind(messageController) as RequestHandler
+);
+router.post(
+  '/messages/bulk/delete', 
+  authorize('ADMIN', 'SUPER_ADMIN') as RequestHandler, 
+  messageController.bulkDeleteMessages.bind(messageController) as RequestHandler
+);
+
+// Individual message operations
 router.get(
   '/messages/:id', 
   authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
@@ -46,23 +67,11 @@ router.delete(
   messageController.deleteContactMessage.bind(messageController) as RequestHandler
 );
 
-// Bulk operations
+// Message replies
 router.post(
-  '/messages/bulk/update', 
+  '/messages/:id/replies', 
   authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
-  messageController.bulkUpdateMessages.bind(messageController) as RequestHandler
-);
-router.post(
-  '/messages/bulk/delete', 
-  authorize('ADMIN', 'SUPER_ADMIN') as RequestHandler, 
-  messageController.bulkDeleteMessages.bind(messageController) as RequestHandler
-);
-
-// Statistics
-router.get(
-  '/messages/stats', 
-  authorize('ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR', 'MODERATOR') as RequestHandler, 
-  messageController.getMessageStats.bind(messageController) as RequestHandler
+  messageController.createMessageReply.bind(messageController) as RequestHandler
 );
 
 // Message templates
