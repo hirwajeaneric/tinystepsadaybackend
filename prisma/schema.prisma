@@ -238,7 +238,7 @@ model BlogCategory {
 model BlogComment {
   id        String      @id @default(auto()) @map("_id") @db.ObjectId
   content   String
-  isApproved Boolean    @default(false)
+  isApproved Boolean    @default(true)
   isSpam    Boolean     @default(false)
   ipAddress String?
   userAgent String?
