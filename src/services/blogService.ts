@@ -427,6 +427,16 @@ export class BlogService {
       }
     })
 
+    // Update the commentsCount on the blog post
+    await prisma.blogPost.update({
+      where: { id: data.postId },
+      data: {
+        commentsCount: {
+          increment: 1
+        }
+      }
+    })
+
     return this.formatBlogComment(comment)
   }
 
@@ -492,7 +502,7 @@ export class BlogService {
     if (authorId) {
       const existingComment = await prisma.blogComment.findUnique({
         where: { id },
-        select: { authorId: true }
+        select: { authorId: true, postId: true, isApproved: true }
       })
 
       if (!existingComment) {
@@ -502,6 +512,16 @@ export class BlogService {
       if (existingComment.authorId !== authorId) {
         throw new Error("Unauthorized to update this comment")
       }
+    }
+
+    // Get the existing comment to check if approval status is changing
+    const existingComment = await prisma.blogComment.findUnique({
+      where: { id },
+      select: { postId: true, isApproved: true }
+    })
+
+    if (!existingComment) {
+      throw new Error("Comment not found")
     }
 
     const comment = await prisma.blogComment.update({
@@ -531,6 +551,31 @@ export class BlogService {
       }
     })
 
+    // If approval status changed, update the comment count
+    if (data.isApproved !== undefined && data.isApproved !== existingComment.isApproved) {
+      if (data.isApproved) {
+        // Comment was approved, increment count
+        await prisma.blogPost.update({
+          where: { id: existingComment.postId },
+          data: {
+            commentsCount: {
+              increment: 1
+            }
+          }
+        })
+      } else {
+        // Comment was disapproved, decrement count
+        await prisma.blogPost.update({
+          where: { id: existingComment.postId },
+          data: {
+            commentsCount: {
+              decrement: 1
+            }
+          }
+        })
+      }
+    }
+
     return this.formatBlogComment(comment)
   }
 
@@ -539,7 +584,7 @@ export class BlogService {
     if (authorId) {
       const existingComment = await prisma.blogComment.findUnique({
         where: { id },
-        select: { authorId: true }
+        select: { authorId: true, postId: true }
       })
 
       if (!existingComment) {
@@ -549,10 +594,48 @@ export class BlogService {
       if (existingComment.authorId !== authorId) {
         throw new Error("Unauthorized to delete this comment")
       }
+
+      // Delete the comment
+      await prisma.blogComment.delete({
+        where: { id }
+      })
+
+      // Update the commentsCount on the blog post
+      await prisma.blogPost.update({
+        where: { id: existingComment.postId },
+        data: {
+          commentsCount: {
+            decrement: 1
+          }
+        }
+      })
+
+      return { success: true }
     }
 
+    // For admin deletions, we need to get the postId first
+    const existingComment = await prisma.blogComment.findUnique({
+      where: { id },
+      select: { postId: true }
+    })
+
+    if (!existingComment) {
+      throw new Error("Comment not found")
+    }
+
+    // Delete the comment
     await prisma.blogComment.delete({
       where: { id }
+    })
+
+    // Update the commentsCount on the blog post
+    await prisma.blogPost.update({
+      where: { id: existingComment.postId },
+      data: {
+        commentsCount: {
+          decrement: 1
+        }
+      }
     })
 
     return { success: true }
@@ -784,44 +867,48 @@ export class BlogService {
       where.postId = postId
     }
 
-    const [comments, total] = await Promise.all([
-      prisma.blogComment.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          author: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            }
-          },
-          replies: {
-            where: {
-              isApproved: true,
-              isSpam: false
-            },
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  avatar: true,
-                }
-              }
-            }
+    // Fetch all comments for the post (both top-level and replies)
+    const allComments = await prisma.blogComment.findMany({
+      where: {
+        postId: postId,
+        isApproved: true,
+        isSpam: false
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
           }
         }
-      }),
-      prisma.blogComment.count({ where })
-    ])
+      },
+      orderBy: { [sortBy]: sortOrder }
+    })
+
+    // Separate top-level comments and replies
+    const topLevelComments = allComments.filter(comment => !comment.parentId)
+    const replies = allComments.filter(comment => comment.parentId)
+
+    // Attach replies to their parent comments
+    const commentsWithReplies = topLevelComments.map(comment => ({
+      ...comment,
+      replies: replies
+        .filter(reply => reply.parentId === comment.id)
+        .map(reply => ({
+          ...reply,
+          author: reply.author, // Ensure author info is preserved
+          replies: [] // Replies don't have nested replies
+        }))
+    }))
+
+    // Apply pagination to top-level comments
+    const paginatedComments = commentsWithReplies.slice(skip, skip + limit)
+    const total = topLevelComments.length
 
     return {
-      comments: comments.map(comment => this.formatBlogComment(comment)),
+      comments: paginatedComments.map(comment => this.formatBlogComment(comment)),
       pagination: {
         total,
         page,
@@ -910,7 +997,7 @@ export class BlogService {
       postId: comment.postId,
       author: {
         id: comment.author.id,
-        name: `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim(),
+        name: `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim() || 'Anonymous User',
         avatar: comment.author.avatar,
       },
       parentId: comment.parentId,
@@ -918,5 +1005,39 @@ export class BlogService {
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     }
+  }
+
+  // Helper methods for data integrity
+  async recalculateCommentCount(postId: string) {
+    const approvedCommentsCount = await prisma.blogComment.count({
+      where: {
+        postId,
+        isApproved: true
+      }
+    })
+
+    await prisma.blogPost.update({
+      where: { id: postId },
+      data: {
+        commentsCount: approvedCommentsCount
+      }
+    })
+
+    return approvedCommentsCount
+  }
+
+  async recalculateLikeCount(postId: string) {
+    const likesCount = await prisma.blogLike.count({
+      where: { postId }
+    })
+
+    await prisma.blogPost.update({
+      where: { id: postId },
+      data: {
+        likesCount
+      }
+    })
+
+    return likesCount
   }
 }

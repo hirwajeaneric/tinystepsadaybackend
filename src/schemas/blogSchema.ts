@@ -67,7 +67,7 @@ export const blogPostQuerySchema = z.object({
   category: z.string().optional(),
   tag: z.string().optional(),
   author: z.string().optional(),
-  isFeatured: z.boolean().optional(),
+  isFeatured: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt", "publishedAt", "title", "views", "likesCount", "commentsCount"]).default("createdAt"),
@@ -85,9 +85,9 @@ export const blogPostQuerySchema = z.object({
 
 export const blogCommentQuerySchema = z.object({
   postId: z.string().min(1, "Post ID is required"),
-  isApproved: z.boolean().optional(),
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(10),
+  isApproved: z.coerce.boolean().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 })
