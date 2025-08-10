@@ -813,7 +813,11 @@ export class BlogService {
       ...comment,
       replies: replies
         .filter(reply => reply.parentId === comment.id)
-        .map(reply => this.formatBlogComment(reply))
+        .map(reply => ({
+          ...reply,
+          author: reply.author, // Ensure author info is preserved
+          replies: [] // Replies don't have nested replies
+        }))
     }))
 
     // Apply pagination to top-level comments
@@ -910,7 +914,7 @@ export class BlogService {
       postId: comment.postId,
       author: {
         id: comment.author.id,
-        name: `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim(),
+        name: `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim() || 'Anonymous User',
         avatar: comment.author.avatar,
       },
       parentId: comment.parentId,
