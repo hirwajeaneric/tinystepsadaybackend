@@ -1,82 +1,201 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../types';
-import { errorResponse } from '../utils';
+import { ZodError, ZodIssue } from 'zod';
+import { 
+  ErrorResponse, 
+  AppValidationError
+} from '../types/errors';
+import { 
+  AuthenticationError, 
+  AuthorizationError, 
+  NotFoundError, 
+  ConflictError, 
+  DatabaseError, 
+  InternalServerError, 
+  ValidationError
+} from '../utils/errors';
+import logger from '../utils/logger';
 
-export const errorHandler = (
-  err: Error,
+/**
+ * Global error handler middleware
+ */
+export const globalErrorHandler = (
+  error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
-) => {
-  let error = { ...err };
-  error.message = err.message;
+  _next: NextFunction
+): void => {
+  let statusCode = 500;
+  let errorCode = 'INTERNAL_SERVER_ERROR';
+  let message = 'Internal server error';
+  let details: any = undefined;
 
-  // Log error
-  console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    body: req.body,
-    params: req.params,
-    query: req.query
-  });
-
-  // Prisma errors
-  if (err.name === 'PrismaClientKnownRequestError') {
-    const message = 'Database operation failed';
-    error = new AppError(message, 400);
+  // Handle different types of errors
+  if (error instanceof AppValidationError) {
+    statusCode = 400;
+    errorCode = 'VALIDATION_ERROR';
+    message = error.message;
+    details = error.details;
+  } else if (error instanceof ValidationError) {
+    statusCode = 400;
+    errorCode = error.code || 'VALIDATION_ERROR';
+    message = error.message;
+  } else if (error instanceof AuthenticationError) {
+    statusCode = 401;
+    errorCode = error.code || 'AUTHENTICATION_ERROR';
+    message = error.message;
+  } else if (error instanceof AuthorizationError) {
+    statusCode = 403;
+    errorCode = error.code || 'AUTHORIZATION_ERROR';
+    message = error.message;
+  } else if (error instanceof NotFoundError) {
+    statusCode = 404;
+    errorCode = error.code || 'NOT_FOUND_ERROR';
+    message = error.message;
+  } else if (error instanceof ConflictError) {
+    statusCode = 409;
+    errorCode = error.code || 'CONFLICT_ERROR';
+    message = error.message;
+  } else if (error instanceof DatabaseError) {
+    statusCode = 500;
+    errorCode = error.code || 'DATABASE_ERROR';
+    message = error.message;
+  } else if (error instanceof ZodError) {
+    statusCode = 400;
+    errorCode = 'VALIDATION_ERROR';
+    message = 'Validation failed';
+    details = error.issues.map((err: ZodIssue) => ({
+      field: err.path.join('.'),
+      message: err.message,
+      value: err.input
+    }));
+  } else if (error instanceof InternalServerError) {
+    statusCode = error.statusCode;
+    errorCode = error.code || 'INTERNAL_SERVER_ERROR';
+    message = error.message;
   }
 
-  if (err.name === 'PrismaClientValidationError') {
-    const message = 'Invalid data provided';
-    error = new AppError(message, 400);
+  // Log error details
+  const errorResponse: ErrorResponse = {
+    success: false,
+    error: errorCode,
+    message,
+    statusCode,
+    timestamp: new Date().toISOString(),
+    path: req.path,
+    details
+  };
+
+  // Log based on error severity
+  if (statusCode >= 500) {
+    logger.error('Server error:', {
+      error: error.message,
+      stack: error.stack,
+      url: req.url,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: (req as any).user?.userId
+    });
+  } else if (statusCode >= 400) {
+    logger.warn('Client error:', {
+      error: error.message,
+      url: req.url,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: (req as any).user?.userId
+    });
   }
 
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    const message = 'Resource not found';
-    error = new AppError(message, 404);
+  // Don't send error details in production for security
+  if (process.env['NODE_ENV'] === 'production' && statusCode >= 500) {
+    errorResponse.message = 'Internal server error';
+    errorResponse.details = {};
   }
 
-  // Mongoose duplicate key
-  if (err.name === 'MongoError' && (err as any).code === 11000) {
-    const message = 'Duplicate field value entered';
-    error = new AppError(message, 400);
-  }
-
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const message = Object.values((err as any).errors)
-      .map((val: any) => val.message)
-      .join(', ');
-    error = new AppError(message, 400);
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token';
-    error = new AppError(message, 401);
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired';
-    error = new AppError(message, 401);
-  }
-
-  // Default error
-  const statusCode = (error as AppError).statusCode || 500;
-  const message = error.message || 'Server Error';
-
-  res.status(statusCode).json(
-    errorResponse(
-      message,
-      process.env.NODE_ENV === 'development' ? err.stack : undefined
-    )
-  );
+  res.status(statusCode).json(errorResponse);
 };
 
-export const notFound = (req: Request, res: Response, next: NextFunction) => {
-  const error = new AppError(`Route not found - ${req.originalUrl}`, 404);
-  next(error);
-}; 
+/**
+ * 404 handler for undefined routes
+ */
+export const notFoundHandler = (req: Request, res: Response): void => {
+  const errorResponse: ErrorResponse = {
+    success: false,
+    error: 'NOT_FOUND_ERROR',
+    message: `Route ${req.method} ${req.path} not found`,
+    statusCode: 404,
+    timestamp: new Date().toISOString(),
+    path: req.path
+  };
+
+  logger.warn('Route not found:', {
+    url: req.url,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+
+  res.status(404).json(errorResponse);
+};
+
+/**
+ * Async error wrapper for route handlers
+ */
+export const asyncHandler = (fn: Function) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+/**
+ * Error handler for unhandled promise rejections
+ */
+export const handleUnhandledRejection = (reason: any, promise: Promise<any>): void => {
+  logger.error('Unhandled Promise Rejection:', {
+    reason: reason?.message || reason,
+    stack: reason?.stack,
+    promise
+  });
+
+  // In production, you might want to exit the process
+  if (process.env['NODE_ENV'] === 'production') {
+    process.exit(1);
+  }
+};
+
+/**
+ * Error handler for uncaught exceptions
+ */
+export const handleUncaughtException = (error: Error): void => {
+  logger.error('Uncaught Exception:', {
+    error: error.message,
+    stack: error.stack
+  });
+
+  // In production, you might want to exit the process
+  if (process.env['NODE_ENV'] === 'production') {
+    process.exit(1);
+  }
+};
+
+/**
+ * Setup global error handlers
+ */
+export const setupErrorHandlers = (): void => {
+  process.on('unhandledRejection', handleUnhandledRejection);
+  process.on('uncaughtException', handleUncaughtException);
+};
+
+/**
+ * Custom error factory for common errors
+ */
+export const createError = {
+  validation: (message: string, details?: any) => new AppValidationError(message, details),
+  authentication: (message: string, code?: string) => new AuthenticationError(message, code),
+  authorization: (message: string, code?: string) => new AuthorizationError(message, code),
+  notFound: (message: string, code?: string) => new NotFoundError(message, code),
+  conflict: (message: string, code?: string) => new ConflictError(message, code),
+  database: (message: string, code?: string) => new DatabaseError(message, code),
+  internal: (message?: string) => new InternalServerError(message)
+};

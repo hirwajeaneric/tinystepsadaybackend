@@ -6,74 +6,436 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
+// User Management
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  email             String   @unique
+  username          String   @unique
+  firstName         String?
+  lastName          String?
+  password          String?  // Made optional for social auth users
+  avatar            String?
+  bio               String?
+  role              UserRole @default(USER)
+  isEmailVerified   Boolean  @default(false)
+  emailVerificationToken String?
+  emailVerificationExpires DateTime?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean  @default(false)
+  lastLogin         DateTime?
+  isActive          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Social Authentication Fields
+  authProvider      AuthProvider? @default(EMAIL)
+  socialId          String?       // ID from social provider
+  socialEmail       String?       // Email from social provider
+  profileCompleted  Boolean       @default(false)
+  
+  // Social Account Linking
+  linkedAccounts    SocialAccount[]
 
   // Relations
-  posts     Post[]
-  comments  Comment[]
+  sessions          UserSession[]
+  notifications     Notification[]
+  
+  // Message System Relations
+  assignedMessages  ContactMessage[] @relation("AssignedMessages")
+  messageReplies    MessageReply[]   @relation("MessageReplies")
+  createdTemplates  MessageTemplate[] @relation("CreatedTemplates")
+  
+  // File Management Relations
+  uploadedFiles     File[]          @relation("UploadedFiles")
+
+  // Blog Relations
+  blogPosts         BlogPost[]      @relation("BlogAuthor")
+  blogComments      BlogComment[]   @relation("CommentAuthor")
+  blogLikes         BlogLike[]      @relation("LikeUser")
 
   @@map("users")
 }
 
-model Post {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  published   Boolean  @default(false)
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Social Account Linking
+model SocialAccount {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String       @db.ObjectId
+  provider     AuthProvider
+  providerId   String       // ID from the social provider
+  providerEmail String?
+  displayName  String?
+  avatar       String?
+  accessToken  String?      // Encrypted access token
+  refreshToken String?      // Encrypted refresh token
+  expiresAt    DateTime?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   // Relations
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments  Comment[]
-  tags      Tag[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("posts")
+  @@unique([provider, providerId])
+  @@map("social_accounts")
 }
 
-model Comment {
-  id        String   @id @default(cuid())
+model UserSession {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  refreshToken String   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  userAgent    String?
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime
+  rememberMe   Boolean  @default(false)
+  refreshCount Int      @default(0)
+  maxRefreshes Int      @default(8)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// Notifications
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  data      Json?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Message System
+model ContactMessage {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String
+  subject     String
+  message     String
+  status      MessageStatus       @default(UNREAD)
+  priority    MessagePriority     @default(MEDIUM)
+  category    MessageCategory     @default(GENERAL)
+  source      MessageSource       @default(CONTACT_FORM)
+  tags        String[]            @default([])
+  ipAddress   String?
+  userAgent   String?
+  readAt      DateTime?
+  repliedAt   DateTime?
+  assignedTo  String?             @db.ObjectId
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  replies     MessageReply[]
+  assignedUser User?              @relation("AssignedMessages", fields: [assignedTo], references: [id])
+
+  @@map("contact_messages")
+}
+
+model MessageReply {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  messageId   String        @db.ObjectId
+  content     String
+  sentBy      ReplySender   @default(ADMIN)
+  sentByUser  String?       @db.ObjectId
+  attachments String[]      @default([])
+  createdAt   DateTime      @default(now())
+
+  // Relations
+  message     ContactMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User?         @relation("MessageReplies", fields: [sentByUser], references: [id])
+
+  @@map("message_replies")
+}
+
+model MessageTemplate {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  subject     String
+  content     String
+  category    MessageCategory @default(GENERAL)
+  isDefault   Boolean         @default(false)
+  createdBy   String?         @db.ObjectId
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  createdByUser User?         @relation("CreatedTemplates", fields: [createdBy], references: [id])
+
+  @@map("message_templates")
+}
+
+// Blog System
+model BlogPost {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  slug            String      @unique
+  excerpt         String?
+  content         String
+  status          BlogStatus  @default(DRAFT)
+  featuredImage   String?
+  readTime        Int?        // Estimated reading time in minutes
+  views           Int         @default(0)
+  likesCount      Int         @default(0)
+  commentsCount   Int         @default(0)
+  sharesCount     Int         @default(0)
+  isFeatured      Boolean     @default(false)
+  publishedAt     DateTime?
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String[]
+  authorId        String      @db.ObjectId
+  categoryId      String?     @db.ObjectId
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  author          User        @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  category        BlogCategory? @relation(fields: [categoryId], references: [id])
+  comments        BlogComment[]
+  likes           BlogLike[]
+  tags            BlogPostTag[]
+
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  color       String?    // Hex color for UI
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  posts       BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogComment {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
   content   String
-  authorId  String
-  postId    String
+  isApproved Boolean    @default(false)
+  isSpam    Boolean     @default(false)
+  ipAddress String?
+  userAgent String?
+  postId    String      @db.ObjectId
+  authorId  String      @db.ObjectId
+  parentId  String?     @db.ObjectId // For nested comments
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  post      BlogPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User        @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent    BlogComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   BlogComment[] @relation("CommentReplies")
+
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  // Relations
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation("LikeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("blog_likes")
+}
+
+model BlogTag {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  slug      String   @unique
+  color     String?  // Hex color for UI
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  posts     BlogPostTag[]
 
-  @@map("comments")
+  @@map("blog_tags")
 }
 
-model Tag {
-  id    String @id @default(cuid())
-  name  String @unique
-  color String?
+model BlogPostTag {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  tagId     String   @db.ObjectId
+  createdAt DateTime @default(now())
 
   // Relations
-  posts Post[]
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag       BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@map("tags")
+  @@unique([postId, tagId])
+  @@map("blog_post_tags")
 }
 
+// Enums
 enum UserRole {
   USER
-  ADMIN
   MODERATOR
+  INSTRUCTOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  FACEBOOK
+  GITHUB
+  LINKEDIN
+  TWITTER
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  SYSTEM
+}
+
+// Message System Enums
+enum MessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum MessagePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MessageCategory {
+  GENERAL
+  SUPPORT
+  MENTORSHIP
+  BILLING
+  TECHNICAL
+  FEEDBACK
+}
+
+enum MessageSource {
+  CONTACT_FORM
+  EMAIL
+  PHONE
+  CHAT
+}
+
+enum ReplySender {
+  MODERATOR
+  INSTRUCTOR
+  ADMIN
+  SUPER_ADMIN
+  USER
+}
+
+// Subscriber Management
+model Subscriber {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  email         String           @unique
+  subscribingTo SubscribeType
+  item          Json?            // For Book Publish subscriptions
+  isActive      Boolean          @default(true)
+  ipAddress     String?
+  userAgent     String?
+  unsubscribedAt DateTime?
+  unsubscribeReason UnsubscribeReason?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("subscribers")
+}
+
+enum UnsubscribeReason {
+  TOO_MANY_EMAILS
+  NOT_RELEVANT
+  SPAM
+  PRIVACY_CONCERNS
+  NO_LONGER_INTERESTED
+  OTHER
+}
+
+enum SubscribeType {
+  FOOTER
+  MODAL
+  BOOK_PUBLISH
+}
+
+// File Management System
+model File {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  url         String
+  alt         String?
+  type        FileType
+  caption     String?
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int      // File size in bytes
+  width       Int?     // For images/videos
+  height      Int?     // For images/videos
+  duration    Int?     // For videos (in seconds)
+  uploadedBy  String?  @db.ObjectId
+  isPublic    Boolean  @default(true)
+  tags        String[] @default([])
+  metadata    Json?    // Additional metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  uploadedByUser User? @relation("UploadedFiles", fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  SCHEDULED
 }
