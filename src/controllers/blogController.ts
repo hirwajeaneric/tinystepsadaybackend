@@ -378,4 +378,30 @@ export class BlogController {
       return handleError(error, res)
     }
   }
+
+  // Admin utility method to recalculate counts for data integrity
+  async recalculateCounts(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { postId } = req.params
+      
+      if (!postId) {
+        return res.status(400).json({ error: "Post ID is required" })
+      }
+
+      const [commentCount, likeCount] = await Promise.all([
+        blogService.recalculateCommentCount(postId),
+        blogService.recalculateLikeCount(postId)
+      ])
+
+      return res.json({
+        success: true,
+        postId,
+        commentCount,
+        likeCount,
+        message: "Counts recalculated successfully"
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
 }

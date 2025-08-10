@@ -57,6 +57,9 @@ router.get("/comments", validate({ query: blogCommentQuerySchema }), blogControl
 router.put("/comments/:id", validate({ body: blogCommentUpdateSchema }), blogController.updateComment as RequestHandler)
 router.delete("/comments/:id", blogController.deleteComment as RequestHandler)
 
+// Admin utility routes
+router.post("/posts/:postId/recalculate-counts", authorize(UserRole.ADMIN) as RequestHandler, blogController.recalculateCounts as RequestHandler)
+
 // Blog Likes
 router.post("/likes", validate({ body: blogLikeSchema }), blogController.toggleLike as RequestHandler)
 router.get("/likes/:postId", blogController.checkLike as RequestHandler)
