@@ -784,44 +784,44 @@ export class BlogService {
       where.postId = postId
     }
 
-    const [comments, total] = await Promise.all([
-      prisma.blogComment.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          author: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            }
-          },
-          replies: {
-            where: {
-              isApproved: true,
-              isSpam: false
-            },
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  avatar: true,
-                }
-              }
-            }
+    // Fetch all comments for the post (both top-level and replies)
+    const allComments = await prisma.blogComment.findMany({
+      where: {
+        postId: postId,
+        isApproved: true,
+        isSpam: false
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
           }
         }
-      }),
-      prisma.blogComment.count({ where })
-    ])
+      },
+      orderBy: { [sortBy]: sortOrder }
+    })
+
+    // Separate top-level comments and replies
+    const topLevelComments = allComments.filter(comment => !comment.parentId)
+    const replies = allComments.filter(comment => comment.parentId)
+
+    // Attach replies to their parent comments
+    const commentsWithReplies = topLevelComments.map(comment => ({
+      ...comment,
+      replies: replies
+        .filter(reply => reply.parentId === comment.id)
+        .map(reply => this.formatBlogComment(reply))
+    }))
+
+    // Apply pagination to top-level comments
+    const paginatedComments = commentsWithReplies.slice(skip, skip + limit)
+    const total = topLevelComments.length
 
     return {
-      comments: comments.map(comment => this.formatBlogComment(comment)),
+      comments: paginatedComments.map(comment => this.formatBlogComment(comment)),
       pagination: {
         total,
         page,
