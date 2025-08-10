@@ -850,8 +850,134 @@ export class BlogService {
       throw new Error("Post not found")
     }
 
-    return this.formatBlogPost(post)
-    // return post;
+    // Get related posts and navigation
+    const [relatedPosts, navigation] = await Promise.all([
+      this.getRelatedPosts(post.id, post.categoryId, post.tags.map(t => t.tag.id)),
+      this.getPostNavigation(post.id, post.createdAt)
+    ])
+
+    const formattedPost = this.formatBlogPost(post)
+    
+    return {
+      ...formattedPost,
+      relatedPosts,
+      navigation
+    }
+  }
+
+  // Get related posts based on category and tags
+  async getRelatedPosts(currentPostId: string, categoryId: string | null, tagIds: string[]) {
+    const where: any = {
+      id: { not: currentPostId },
+      status: "PUBLISHED"
+    }
+
+    // Build OR conditions for category and tags
+    const orConditions = []
+    
+    if (categoryId) {
+      orConditions.push({ categoryId })
+    }
+    
+    if (tagIds.length > 0) {
+      orConditions.push({
+        tags: {
+          some: {
+            tagId: { in: tagIds }
+          }
+        }
+      })
+    }
+
+    if (orConditions.length > 0) {
+      where.OR = orConditions
+    }
+
+    const relatedPosts = await prisma.blogPost.findMany({
+      where,
+      take: 3,
+      orderBy: [
+        { isFeatured: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          }
+        },
+        category: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    })
+
+    return relatedPosts.map(post => this.formatBlogPost(post))
+  }
+
+  // Get previous and next posts based on creation date
+  async getPostNavigation(currentPostId: string, currentPostDate: Date) {
+    const [previousPost, nextPost] = await Promise.all([
+      // Get previous post (older)
+      prisma.blogPost.findFirst({
+        where: {
+          id: { not: currentPostId },
+          status: "PUBLISHED",
+          createdAt: { lt: currentPostDate }
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          featuredImage: true,
+          createdAt: true
+        }
+      }),
+      // Get next post (newer)
+      prisma.blogPost.findFirst({
+        where: {
+          id: { not: currentPostId },
+          status: "PUBLISHED",
+          createdAt: { gt: currentPostDate }
+        },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          featuredImage: true,
+          createdAt: true
+        }
+      })
+    ]);
+
+    return {
+      previous: previousPost ? {
+        id: previousPost.id,
+        title: previousPost.title,
+        slug: previousPost.slug,
+        excerpt: previousPost.excerpt,
+        featuredImage: previousPost.featuredImage,
+        createdAt: previousPost.createdAt
+      } : null,
+      next: nextPost ? {
+        id: nextPost.id,
+        title: nextPost.title,
+        slug: nextPost.slug,
+        excerpt: nextPost.excerpt,
+        featuredImage: nextPost.featuredImage,
+        createdAt: nextPost.createdAt
+      } : null
+    }
   }
 
   async getPublicComments(query: BlogCommentQuery) {
