@@ -62,6 +62,10 @@ model User {
   blogComments      BlogComment[]   @relation("CommentAuthor")
   blogLikes         BlogLike[]      @relation("LikeUser")
 
+  // Quiz Relations
+  createdQuizzes    Quiz[]          @relation("QuizCreator")
+  quizResults       QuizResult[]    @relation("QuizResults")
+
   @@map("users")
 }
 
@@ -300,6 +304,115 @@ model BlogPostTag {
   @@map("blog_post_tags")
 }
 
+// Quiz System
+model Quiz {
+  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
+  quizType              QuizType         @default(DEFAULT)
+  redirectAfterAnswer   RedirectType     @default(HOME)
+  title                 String
+  subtitle              String?
+  description           String
+  category              String
+  estimatedTime         String
+  difficulty            QuizDifficulty    @default(BEGINNER)
+  status                QuizStatus       @default(DRAFT)
+  isPublic              Boolean          @default(false)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  totalAttempts         Int              @default(0)
+  completedAttempts     Int              @default(0)
+  averageScore          Float            @default(0)
+  averageCompletionTime Float            @default(0) // in minutes
+  tags                  String[]         @default([])
+  createdBy             String           @db.ObjectId
+
+  // Relations
+  questions             QuizQuestion[]
+  gradingCriteria       GradingCriteria[]
+  results               QuizResult[]
+  createdByUser         User             @relation("QuizCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  order     Int
+  quizId    String        @db.ObjectId
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  quiz      Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options   QuizOption[]
+
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  text       String
+  value      Int
+  order      Int
+  questionId String        @db.ObjectId
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // Relations
+  question   QuizQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_options")
+}
+
+model GradingCriteria {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  minScore            Int
+  maxScore            Int
+  label               String
+  color               String
+  recommendations     String[]
+  proposedCourses     Json[]   @default([]) // Array of { id, name, slug }
+  proposedProducts    Json[]   @default([]) // Array of { id, name, slug }
+  proposedStreaks     Json[]   @default([]) // Array of { id, name, slug }
+  description         String?
+  quizId              String   @db.ObjectId
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  quiz                Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("grading_criteria")
+}
+
+model QuizResult {
+  id                   String           @id @default(auto()) @map("_id") @db.ObjectId
+  quizId               String           @db.ObjectId
+  userId               String           @db.ObjectId
+  score                Int
+  maxScore             Int
+  percentage           Float
+  level                QuizResultLevel
+  feedback             String
+  recommendations      String[]
+  completedAt          DateTime         @default(now())
+  timeSpent            Float            @default(0) // in minutes
+  answers              Json             // Record<string, string>
+  classification       String
+  areasOfImprovement   String[]
+  supportNeeded        String[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  // Relations
+  quiz                 Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user                 User             @relation("QuizResults", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_results")
+}
+
 // Enums
 enum UserRole {
   USER
@@ -438,4 +551,34 @@ enum BlogStatus {
   PUBLISHED
   ARCHIVED
   SCHEDULED
+}
+
+// Quiz System Enums
+enum QuizType {
+  DEFAULT
+  ONBOARDING
+}
+
+enum RedirectType {
+  HOME
+  RESULTS
+}
+
+enum QuizDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum QuizStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum QuizResultLevel {
+  EXCELLENT
+  GOOD
+  FAIR
+  NEEDS_IMPROVEMENT
 }

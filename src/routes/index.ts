@@ -4,6 +4,7 @@ import messageRoutes from './messageRoutes';
 import subscriberRoutes from './subscriberRoutes';
 import fileRoutes from './fileRoutes';
 import blogRoutes from './blogRoutes';
+import quizRoutes from './quizRoutes';
 import database from '../utils/database';
 import { ApiResponse } from '../types';
 
@@ -92,6 +93,24 @@ router.get('/info', (_req: Request, res: Response) => {
           toggleLike: 'POST /api/blog/likes (auth required)',
           checkLike: 'GET /api/blog/likes/:postId (auth required)',
         },
+        quizzes: {
+          // Public endpoints
+          publicQuizzes: 'GET /api/quizzes/public/quizzes',
+          publicQuiz: 'GET /api/quizzes/public/quizzes/:id',
+          categories: 'GET /api/quizzes/categories',
+          difficulties: 'GET /api/quizzes/difficulties',
+          // Protected endpoints
+          quizzes: 'GET /api/quizzes/quizzes (auth required)',
+          createQuiz: 'POST /api/quizzes/quizzes (admin/instructor)',
+          updateQuiz: 'PUT /api/quizzes/quizzes/:id (admin/instructor)',
+          deleteQuiz: 'DELETE /api/quizzes/quizzes/:id (admin/instructor)',
+          analytics: 'GET /api/quizzes/quizzes/:id/analytics (quiz creator)',
+          // Quiz Results
+          submitQuiz: 'POST /api/quizzes/results (auth required)',
+          getResults: 'GET /api/quizzes/results (auth required)',
+          getResult: 'GET /api/quizzes/results/:id (auth required)',
+          userResults: 'GET /api/quizzes/user/results (auth required)',
+        },
       },
     },
   };
@@ -113,5 +132,8 @@ router.use('/files', fileRoutes);
 
 // Mount blog routes
 router.use('/blog', blogRoutes);
+
+// Mount quiz routes
+router.use('/quizzes', quizRoutes);
 
 export default router;
