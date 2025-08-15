@@ -1,4 +1,5 @@
 import { PrismaClient, QuizResultLevel } from "@prisma/client"
+import { NotFoundError, AuthorizationError, ValidationError } from "../utils/errors"
 import type { 
   Quiz, 
   UpdateQuizData, 
@@ -269,11 +270,11 @@ export class QuizService {
     })
 
     if (!existingQuiz) {
-      throw new Error("Quiz not found")
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
     }
 
     if (existingQuiz.createdBy !== updatedBy) {
-      throw new Error("Unauthorized to update this quiz")
+      throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
     }
 
     const { questions, gradingCriteria, ...quizData } = data
@@ -362,11 +363,11 @@ export class QuizService {
     })
 
     if (!existingQuiz) {
-      throw new Error("Quiz not found")
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
     }
 
     if (existingQuiz.createdBy !== deletedBy) {
-      throw new Error("Unauthorized to delete this quiz")
+      throw new AuthorizationError("Unauthorized to delete this quiz", "INSUFFICIENT_PERMISSIONS")
     }
 
     await prisma.quiz.delete({
@@ -392,11 +393,11 @@ export class QuizService {
     })
 
     if (!quiz) {
-      throw new Error("Quiz not found")
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
     }
 
     if (!quiz.isPublic || quiz.status !== 'ACTIVE') {
-      throw new Error("Quiz is not available")
+      throw new ValidationError("Quiz is not available", "QUIZ_NOT_AVAILABLE")
     }
 
     // Calculate the result
@@ -539,7 +540,7 @@ export class QuizService {
     })
 
     if (!quiz) {
-      throw new Error("Quiz not found")
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
     }
 
     const results = quiz.results

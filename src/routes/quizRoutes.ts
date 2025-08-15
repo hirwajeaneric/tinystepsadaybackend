@@ -7,6 +7,7 @@ import {
   quizSchema, 
   quizUpdateSchema,
   quizQuerySchema,
+  publicQuizQuerySchema,
   quizSubmissionSchema,
   quizResultQuerySchema
 } from "../schemas/quizSchema"
@@ -15,7 +16,7 @@ const router = Router()
 const quizController = new QuizController()
 
 // Public routes (no authentication required)
-router.get("/public/quizzes", validate({ query: quizQuerySchema }), quizController.getPublicQuizzes as RequestHandler)
+router.get("/public/quizzes", validate({ query: publicQuizQuerySchema }), quizController.getPublicQuizzes as RequestHandler)
 router.get("/public/quizzes/:id", quizController.getPublicQuizById as RequestHandler)
 
 // Public categories and difficulties for filtering

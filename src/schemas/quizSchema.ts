@@ -68,9 +68,9 @@ export const quizUpdateSchema = quizSchema.partial().extend({
 export const quizQuerySchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
-  difficulty: z.nativeEnum(QuizDifficulty).optional(),
-  status: z.nativeEnum(QuizStatus).optional(),
-  isPublic: z.coerce.boolean().optional(),
+  difficulty: z.string().optional(),
+  status: z.string().optional(),
+  isPublic: z.string().optional(),
   createdBy: z.string().optional(),
   tags: z.array(z.string()).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -78,11 +78,62 @@ export const quizQuerySchema = z.object({
   sortBy: z.enum(["createdAt", "updatedAt", "title", "totalAttempts", "averageScore"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc")
 }).transform((data) => {
-  // Handle "all" filter for category
-  if (data.category === "all") {
-    data.category = undefined
+  const transformed: any = { ...data }
+  
+  // Handle "all" filter for category, difficulty, status, and isPublic
+  if (transformed.category === "all") {
+    transformed.category = undefined
   }
-  return data
+  if (transformed.difficulty === "all") {
+    transformed.difficulty = undefined
+  }
+  if (transformed.status === "all") {
+    transformed.status = undefined
+  }
+  if (transformed.isPublic === "all") {
+    transformed.isPublic = undefined
+  }
+  
+  // Convert string values to proper types
+  if (transformed.difficulty && transformed.difficulty !== "all") {
+    transformed.difficulty = transformed.difficulty as QuizDifficulty
+  }
+  if (transformed.status && transformed.status !== "all") {
+    transformed.status = transformed.status as QuizStatus
+  }
+  if (transformed.isPublic !== undefined && transformed.isPublic !== "all") {
+    transformed.isPublic = transformed.isPublic === "true"
+  }
+  
+  return transformed
+})
+
+// Public Quiz Query Schema (for public endpoints)
+export const publicQuizQuerySchema = z.object({
+  search: z.string().optional(),
+  category: z.string().optional(),
+  difficulty: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  sortBy: z.enum(["createdAt", "updatedAt", "title", "totalAttempts", "averageScore"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc")
+}).transform((data) => {
+  const transformed: any = { ...data }
+  
+  // Handle "all" filter for category and difficulty
+  if (transformed.category === "all") {
+    transformed.category = undefined
+  }
+  if (transformed.difficulty === "all") {
+    transformed.difficulty = undefined
+  }
+  
+  // Convert string values to proper types
+  if (transformed.difficulty && transformed.difficulty !== "all") {
+    transformed.difficulty = transformed.difficulty as QuizDifficulty
+  }
+  
+  return transformed
 })
 
 // Quiz Result Query Schema
