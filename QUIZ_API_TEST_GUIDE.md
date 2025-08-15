@@ -232,37 +232,63 @@ curl -X POST http://localhost:3000/api/quizzes/results \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
-    "quizId": "quiz_id_here",
-    "answers": [
-      {
-        "questionId": "question_id_here",
-        "optionId": "option_id_here"
-      }
-    ],
-    "timeSpent": 8.5
-  }'
+	"quizId":"689eec7ff38450f091afc30f",
+	"answers": [
+		{
+			"questionId":"689eec7ff38450f091afc310",
+			"optionId":"689eec7ff38450f091afc313"
+		}
+	],
+	"timeSpent": 8.5
+}'
 ```
 
 **Expected Response** (201 Created):
 ```json
 {
-  "id": "result_id_here",
-  "quizId": "quiz_id_here",
-  "userId": "user_id_here",
-  "score": 85,
-  "maxScore": 100,
-  "percentage": 85,
-  "level": "EXCELLENT",
-  "feedback": "Excellent! You demonstrate mastery in this area.",
-  "recommendations": [
-    "Continue building on your strong foundation",
-    "Share your knowledge with others"
-  ],
-  "classification": "Habit Master",
-  "areasOfImprovement": ["Focus on areas for improvement"],
-  "supportNeeded": ["Consider the recommended courses and products"],
-  "completedAt": "2025-01-20T10:30:00.000Z",
-  "timeSpent": 8.5
+	"id": "689ef694f38450f091afc31e",
+	"quizId": "689eec7ff38450f091afc30f",
+	"userId": "688f663036af8a4d76d3a643",
+	"score": 3,
+	"maxScore": 4,
+	"percentage": 75,
+	"level": "GOOD",
+	"feedback": "Good! You have a solid foundation with room for improvement.",
+	"recommendations": [
+		"Focus on consistency in your practice",
+		"Identify and work on your weakest areas",
+		"Set specific, measurable goals"
+	],
+	"completedAt": "2025-08-15T08:57:56.057Z",
+	"timeSpent": 8.5,
+	"answers": [
+		{
+			"questionId": "689eec7ff38450f091afc310",
+			"optionId": "689eec7ff38450f091afc313"
+		}
+	],
+	"classification": "Builder",
+	"areasOfImprovement": [
+		"Consistency",
+		"Advanced techniques"
+	],
+	"supportNeeded": [
+		"Practice tools",
+		"Accountability partner"
+	],
+	"createdAt": "2025-08-15T08:57:56.062Z",
+	"updatedAt": "2025-08-15T08:57:56.062Z",
+	"quiz": {
+		"id": "689eec7ff38450f091afc30f",
+		"title": "Habit Mastery Assessment",
+		"category": "Personal Development"
+	},
+	"user": {
+		"id": "688f663036af8a4d76d3a643",
+		"firstName": "Jean Eric",
+		"lastName": "Hirwa",
+		"email": "hirwajeric@gmail.com"
+	}
 }
 ```
 
@@ -270,9 +296,7 @@ curl -X POST http://localhost:3000/api/quizzes/results \
 **GET** `/api/quizzes/results`
 - **Auth Required**: Yes
 - **Query Parameters**:
-  - `quizId`: Filter by quiz ID
   - `userId`: Filter by user ID
-  - `level`: Filter by result level (EXCELLENT, GOOD, FAIR, NEEDS_IMPROVEMENT)
   - `page`: Page number
   - `limit`: Items per page
   - `sortBy`: Sort field (createdAt, completedAt, score, percentage)
@@ -281,6 +305,108 @@ curl -X POST http://localhost:3000/api/quizzes/results \
 ```bash
 curl -X GET "http://localhost:3000/api/quizzes/results?quizId=quiz_id_here&level=EXCELLENT" \
   -H "Authorization: Bearer <token>"
+```
+
+Expected Response:
+
+```JSON
+{
+	"results": [
+		{
+			"id": "689ef768f38450f091afc31f",
+			"quizId": "689eec7ff38450f091afc30f",
+			"userId": "688f663036af8a4d76d3a643",
+			"score": 3,
+			"maxScore": 4,
+			"percentage": 75,
+			"level": "GOOD",
+			"feedback": "Good! You have a solid foundation with room for improvement.",
+			"recommendations": [
+				"Focus on consistency in your practice",
+				"Identify and work on your weakest areas",
+				"Set specific, measurable goals"
+			],
+			"completedAt": "2025-08-15T09:01:28.410Z",
+			"timeSpent": 8.5,
+			"answers": [
+				{
+					"questionId": "689eec7ff38450f091afc310",
+					"optionId": "689eec7ff38450f091afc313"
+				}
+			],
+			"classification": "Builder",
+			"areasOfImprovement": [
+				"Consistency",
+				"Advanced techniques"
+			],
+			"supportNeeded": [
+				"Practice tools",
+				"Accountability partner"
+			],
+			"createdAt": "2025-08-15T09:01:28.412Z",
+			"updatedAt": "2025-08-15T09:01:28.412Z",
+			"quiz": {
+				"id": "689eec7ff38450f091afc30f",
+				"title": "Habit Mastery Assessment",
+				"category": "Personal Development"
+			},
+			"user": {
+				"id": "688f663036af8a4d76d3a643",
+				"firstName": "Jean Eric",
+				"lastName": "Hirwa",
+				"email": "hirwajeric@gmail.com"
+			}
+		},
+		{
+			"id": "689ef694f38450f091afc31e",
+			"quizId": "689eec7ff38450f091afc30f",
+			"userId": "688f663036af8a4d76d3a643",
+			"score": 3,
+			"maxScore": 4,
+			"percentage": 75,
+			"level": "GOOD",
+			"feedback": "Good! You have a solid foundation with room for improvement.",
+			"recommendations": [
+				"Focus on consistency in your practice",
+				"Identify and work on your weakest areas",
+				"Set specific, measurable goals"
+			],
+			"completedAt": "2025-08-15T08:57:56.057Z",
+			"timeSpent": 8.5,
+			"answers": [
+				{
+					"questionId": "689eec7ff38450f091afc310",
+					"optionId": "689eec7ff38450f091afc313"
+				}
+			],
+			"classification": "Builder",
+			"areasOfImprovement": [
+				"Consistency",
+				"Advanced techniques"
+			],
+			"supportNeeded": [
+				"Practice tools",
+				"Accountability partner"
+			],
+			"createdAt": "2025-08-15T08:57:56.062Z",
+			"updatedAt": "2025-08-15T08:57:56.062Z",
+			"quiz": {
+				"id": "689eec7ff38450f091afc30f",
+				"title": "Habit Mastery Assessment",
+				"category": "Personal Development"
+			},
+			"user": {
+				"id": "688f663036af8a4d76d3a643",
+				"firstName": "Jean Eric",
+				"lastName": "Hirwa",
+				"email": "hirwajeric@gmail.com"
+			}
+		}
+	],
+	"total": 2,
+	"page": 1,
+	"totalPages": 1
+}
 ```
 
 ### 3. Get Quiz Result by ID
@@ -293,6 +419,55 @@ curl -X GET http://localhost:3000/api/quizzes/results/result_id_here \
   -H "Authorization: Bearer <token>"
 ```
 
+Expected Results:
+```JSON
+{
+	"id": "689ef768f38450f091afc31f",
+	"quizId": "689eec7ff38450f091afc30f",
+	"userId": "688f663036af8a4d76d3a643",
+	"score": 3,
+	"maxScore": 4,
+	"percentage": 75,
+	"level": "GOOD",
+	"feedback": "Good! You have a solid foundation with room for improvement.",
+	"recommendations": [
+		"Focus on consistency in your practice",
+		"Identify and work on your weakest areas",
+		"Set specific, measurable goals"
+	],
+	"completedAt": "2025-08-15T09:01:28.410Z",
+	"timeSpent": 8.5,
+	"answers": [
+		{
+			"questionId": "689eec7ff38450f091afc310",
+			"optionId": "689eec7ff38450f091afc313"
+		}
+	],
+	"classification": "Builder",
+	"areasOfImprovement": [
+		"Consistency",
+		"Advanced techniques"
+	],
+	"supportNeeded": [
+		"Practice tools",
+		"Accountability partner"
+	],
+	"createdAt": "2025-08-15T09:01:28.412Z",
+	"updatedAt": "2025-08-15T09:01:28.412Z",
+	"quiz": {
+		"id": "689eec7ff38450f091afc30f",
+		"title": "Habit Mastery Assessment",
+		"category": "Personal Development"
+	},
+	"user": {
+		"id": "688f663036af8a4d76d3a643",
+		"firstName": "Jean Eric",
+		"lastName": "Hirwa",
+		"email": "hirwajeric@gmail.com"
+	}
+}
+```
+
 ### 4. Get User Quiz Results
 **GET** `/api/quizzes/user/results`
 - **Auth Required**: Yes
@@ -302,6 +477,107 @@ curl -X GET http://localhost:3000/api/quizzes/results/result_id_here \
 ```bash
 curl -X GET "http://localhost:3000/api/quizzes/user/results?page=1&limit=10" \
   -H "Authorization: Bearer <token>"
+```
+
+Expected results:
+```JSON
+{
+	"results": [
+		{
+			"id": "689ef768f38450f091afc31f",
+			"quizId": "689eec7ff38450f091afc30f",
+			"userId": "688f663036af8a4d76d3a643",
+			"score": 3,
+			"maxScore": 4,
+			"percentage": 75,
+			"level": "GOOD",
+			"feedback": "Good! You have a solid foundation with room for improvement.",
+			"recommendations": [
+				"Focus on consistency in your practice",
+				"Identify and work on your weakest areas",
+				"Set specific, measurable goals"
+			],
+			"completedAt": "2025-08-15T09:01:28.410Z",
+			"timeSpent": 8.5,
+			"answers": [
+				{
+					"questionId": "689eec7ff38450f091afc310",
+					"optionId": "689eec7ff38450f091afc313"
+				}
+			],
+			"classification": "Builder",
+			"areasOfImprovement": [
+				"Consistency",
+				"Advanced techniques"
+			],
+			"supportNeeded": [
+				"Practice tools",
+				"Accountability partner"
+			],
+			"createdAt": "2025-08-15T09:01:28.412Z",
+			"updatedAt": "2025-08-15T09:01:28.412Z",
+			"quiz": {
+				"id": "689eec7ff38450f091afc30f",
+				"title": "Habit Mastery Assessment",
+				"category": "Personal Development"
+			},
+			"user": {
+				"id": "688f663036af8a4d76d3a643",
+				"firstName": "Jean Eric",
+				"lastName": "Hirwa",
+				"email": "hirwajeric@gmail.com"
+			}
+		},
+		{
+			"id": "689ef694f38450f091afc31e",
+			"quizId": "689eec7ff38450f091afc30f",
+			"userId": "688f663036af8a4d76d3a643",
+			"score": 3,
+			"maxScore": 4,
+			"percentage": 75,
+			"level": "GOOD",
+			"feedback": "Good! You have a solid foundation with room for improvement.",
+			"recommendations": [
+				"Focus on consistency in your practice",
+				"Identify and work on your weakest areas",
+				"Set specific, measurable goals"
+			],
+			"completedAt": "2025-08-15T08:57:56.057Z",
+			"timeSpent": 8.5,
+			"answers": [
+				{
+					"questionId": "689eec7ff38450f091afc310",
+					"optionId": "689eec7ff38450f091afc313"
+				}
+			],
+			"classification": "Builder",
+			"areasOfImprovement": [
+				"Consistency",
+				"Advanced techniques"
+			],
+			"supportNeeded": [
+				"Practice tools",
+				"Accountability partner"
+			],
+			"createdAt": "2025-08-15T08:57:56.062Z",
+			"updatedAt": "2025-08-15T08:57:56.062Z",
+			"quiz": {
+				"id": "689eec7ff38450f091afc30f",
+				"title": "Habit Mastery Assessment",
+				"category": "Personal Development"
+			},
+			"user": {
+				"id": "688f663036af8a4d76d3a643",
+				"firstName": "Jean Eric",
+				"lastName": "Hirwa",
+				"email": "hirwajeric@gmail.com"
+			}
+		}
+	],
+	"total": 2,
+	"page": 1,
+	"totalPages": 1
+}
 ```
 
 ## Quiz Analytics Endpoints
@@ -319,36 +595,46 @@ curl -X GET http://localhost:3000/api/quizzes/quizzes/quiz_id_here/analytics \
 **Expected Response**:
 ```json
 {
-  "totalAttempts": 150,
-  "completedAttempts": 142,
-  "completionRate": 94.67,
-  "averageScore": 78.5,
-  "averageTimeSpent": 12.3,
-  "levelDistribution": {
-    "excellent": 45,
-    "good": 67,
-    "fair": 25,
-    "needsImprovement": 5
-  },
-  "dropoffPoints": [
-    {
-      "questionNumber": 1,
-      "dropoffCount": 3,
-      "dropoffRate": 2.0
-    }
-  ],
-  "popularClassifications": [
-    {
-      "classification": "Habit Builder",
-      "count": 67,
-      "percentage": 47.18
-    }
-  ],
-  "timeDistribution": {
-    "fast": 25,
-    "normal": 89,
-    "slow": 28
-  }
+	"totalAttempts": 2,
+	"completedAttempts": 2,
+	"completionRate": 100,
+	"averageScore": 3,
+	"averageTimeSpent": 8.5,
+	"levelDistribution": {
+		"excellent": 0,
+		"good": 2,
+		"fair": 0,
+		"needsImprovement": 0
+	},
+	"dropoffPoints": [
+		{
+			"questionNumber": 1,
+			"dropoffCount": 0,
+			"dropoffRate": 2
+		},
+		{
+			"questionNumber": 5,
+			"dropoffCount": 0,
+			"dropoffRate": 1
+		},
+		{
+			"questionNumber": 8,
+			"dropoffCount": 0,
+			"dropoffRate": 1.5
+		}
+	],
+	"popularClassifications": [
+		{
+			"classification": "Builder",
+			"count": 2,
+			"percentage": 100
+		}
+	],
+	"timeDistribution": {
+		"fast": 0,
+		"normal": 2,
+		"slow": 0
+	}
 }
 ```
 
