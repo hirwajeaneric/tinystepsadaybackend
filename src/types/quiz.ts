@@ -67,31 +67,26 @@ export interface QuizResult {
   id: string
   quizId: string
   userId: string
+  user?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+  }
   score: number
   maxScore: number
   percentage: number
-  level: QuizResultLevel
-  feedback: string
-  recommendations: string[]
-  completedAt: Date
-  timeSpent: number
-  answers: Record<string, string>
-  classification: string
-  areasOfImprovement: string[]
-  supportNeeded: string[]
-  createdAt: Date
-  updatedAt: Date
-  quiz?: {
-    id: string
-    title: string
-    category: string
-  }
-  user?: {
-    id: string
-    firstName?: string
-    lastName?: string
-    email: string
-  }
+  level?: string
+  feedback?: string
+  recommendations?: string[]
+  completedAt: string
+  timeSpent?: number
+  answers?: Record<string, string>
+  classification?: string
+  areasOfImprovement?: string[]
+  supportNeeded?: string[]
+  proposedCourses?: Array<{ id: string; name: string; slug: string }>
+  proposedProducts?: Array<{ id: string; name: string; slug: string }>
+  proposedStreaks?: Array<{ id: string; name: string; slug: string }>
 }
 
 // Quiz Analytics Interface
@@ -246,4 +241,7 @@ export interface QuizResultCalculation {
   classification: string
   areasOfImprovement: string[]
   supportNeeded: string[]
+  proposedCourses: Array<{ id: string; name: string; slug: string }>
+  proposedProducts: Array<{ id: string; name: string; slug: string }>
+  proposedStreaks: Array<{ id: string; name: string; slug: string }>
 }

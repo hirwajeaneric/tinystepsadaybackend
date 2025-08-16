@@ -419,7 +419,10 @@ export class QuizService {
         answers: answers as any,
         classification: result.classification,
         areasOfImprovement: result.areasOfImprovement,
-        supportNeeded: result.supportNeeded
+        supportNeeded: result.supportNeeded,
+        proposedCourses: result.proposedCourses,
+        proposedProducts: result.proposedProducts,
+        proposedStreaks: result.proposedStreaks
       },
       include: {
         quiz: {
@@ -641,6 +644,9 @@ export class QuizService {
     let classification: string
     let areasOfImprovement: string[]
     let supportNeeded: string[]
+    let proposedCourses: Array<{ id: string; name: string; slug: string }> = []
+    let proposedProducts: Array<{ id: string; name: string; slug: string }> = []
+    let proposedStreaks: Array<{ id: string; name: string; slug: string }> = []
 
     if (matchingCriteria) {
       // Map criteria name to level
@@ -660,6 +666,11 @@ export class QuizService {
       classification = matchingCriteria.label
       areasOfImprovement = ["Focus on areas for improvement"]
       supportNeeded = ["Consider the recommended courses and products"]
+      
+      // Include recommended items from grading criteria
+      proposedCourses = matchingCriteria.proposedCourses || []
+      proposedProducts = matchingCriteria.proposedProducts || []
+      proposedStreaks = matchingCriteria.proposedStreaks || []
     } else {
       // Fallback to default logic
       if (percentage >= 80) {
@@ -718,7 +729,10 @@ export class QuizService {
       recommendations,
       classification,
       areasOfImprovement,
-      supportNeeded
+      supportNeeded,
+      proposedCourses,
+      proposedProducts,
+      proposedStreaks
     }
   }
 
@@ -761,10 +775,9 @@ export class QuizService {
       classification: result.classification,
       areasOfImprovement: result.areasOfImprovement,
       supportNeeded: result.supportNeeded,
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
-      quiz: result.quiz,
-      user: result.user
+      proposedCourses: result.proposedCourses || [],
+      proposedProducts: result.proposedProducts || [],
+      proposedStreaks: result.proposedStreaks || []
     }
   }
 }

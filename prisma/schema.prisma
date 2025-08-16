@@ -403,6 +403,9 @@ model QuizResult {
   classification       String
   areasOfImprovement   String[]
   supportNeeded        String[]
+  proposedCourses      Json[]           @default([]) // Array of { id, name, slug }
+  proposedProducts     Json[]           @default([]) // Array of { id, name, slug }
+  proposedStreaks      Json[]           @default([]) // Array of { id, name, slug }
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
