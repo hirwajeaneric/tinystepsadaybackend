@@ -204,6 +204,7 @@ export interface QuizQuery {
   isPublic?: boolean
   createdBy?: string
   tags?: string[]
+  quizType?: QuizType
   page?: number
   limit?: number
   sortBy?: 'createdAt' | 'updatedAt' | 'title' | 'totalAttempts' | 'averageScore'

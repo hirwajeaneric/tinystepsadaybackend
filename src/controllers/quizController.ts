@@ -324,6 +324,8 @@ export class QuizController {
       // Override to only show public and active quizzes
       query.isPublic = true
       query.status = 'ACTIVE'
+      query.quizType = 'DEFAULT'
+
       
       const result = await quizService.getQuizzes(query)
       return res.json({
@@ -349,7 +351,43 @@ export class QuizController {
         "Career",
         "Relationships",
         "Productivity",
-        "Mindfulness"
+        "Mindfulness",
+        "Finance",
+        "Family",
+        "Social",
+        "Spirituality",
+        "Personal Growth",
+        "Self-Improvement",
+        "Leadership",
+        "Entrepreneurship",
+        "Marketing",
+        "Sales",
+        "Technology",
+        "Design",
+        "Writing",
+        "Reading",
+        "Listening",
+        "Speaking",
+        "Travel",
+        "Food",
+        "Fashion",
+        "Art",
+        "Music",
+        "Movies",
+        "TV",
+        "Books",
+        "Podcasts",
+        "Gaming",
+        "Health",
+        "Fitness",
+        "Sleep",
+        "Meditation",
+        "Yoga",
+        "Onboarding",
+        "Productivity",
+        "Time Management",
+        "Goal Setting",
+        "Habit Building",
       ]
       return res.json({
         success: true,

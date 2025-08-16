@@ -130,7 +130,7 @@ export class QuizService {
   }
 
   async getQuizzes(query: QuizQuery): Promise<{ quizzes: Quiz[]; total: number; page: number; totalPages: number }> {
-    const { search, category, difficulty, status, isPublic, createdBy, tags, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query
+    const { search, category, difficulty, status, isPublic, createdBy, tags, quizType, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query
     const skip = (page - 1) * limit
 
     const where: any = {}
@@ -157,6 +157,10 @@ export class QuizService {
 
     if (isPublic !== undefined) {
       where.isPublic = isPublic
+    }
+
+    if (quizType) {
+      where.quizType = quizType
     }
 
     if (createdBy) {
