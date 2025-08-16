@@ -509,6 +509,16 @@ export class QuizService {
       where.level = level
     }
 
+    // Only exclude onboarding quiz results for user-facing queries (when userId is provided)
+    // Admin/management queries should have access to all results including onboarding ones
+    if (userId) {
+      where.quiz = {
+        category: {
+          not: 'ONBOARDING'
+        }
+      }
+    }
+
     const [results, total] = await Promise.all([
       prisma.quizResult.findMany({
         where,
@@ -823,7 +833,9 @@ export class QuizService {
       proposedCourses: result.proposedCourses || [],
       proposedProducts: result.proposedProducts || [],
       proposedStreaks: result.proposedStreaks || [],
-      proposedBlogPosts: result.proposedBlogPosts || []
+      proposedBlogPosts: result.proposedBlogPosts || [],
+      user: result.user || null,
+      quiz: result.quiz || null
     }
   }
 }
