@@ -108,6 +108,26 @@ export class QuizController {
     }
   }
 
+  async getOnboardingQuiz(_req: Request, res: Response) {
+    try {
+      const quiz = await quizService.getOnboardingQuiz()
+      if (!quiz) {
+        return res.status(404).json({ 
+          success: false,
+          error: "NOT_FOUND_ERROR",
+          message: "No onboarding quiz available" 
+        })
+      }
+      return res.json({
+        success: true,
+        message: "Onboarding quiz retrieved successfully",
+        data: quiz
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
   async updateQuiz(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params

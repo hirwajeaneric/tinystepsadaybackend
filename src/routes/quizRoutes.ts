@@ -18,6 +18,7 @@ const quizController = new QuizController()
 // Public routes (no authentication required)
 router.get("/public/quizzes", validate({ query: publicQuizQuerySchema }), quizController.getPublicQuizzes as RequestHandler)
 router.get("/public/quizzes/:id", quizController.getPublicQuizById as RequestHandler)
+router.get("/public/onboarding", quizController.getOnboardingQuiz as RequestHandler)
 
 // Public categories and difficulties for filtering
 router.get("/categories", quizController.getQuizCategories as RequestHandler)

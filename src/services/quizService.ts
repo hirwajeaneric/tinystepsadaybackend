@@ -268,6 +268,40 @@ export class QuizService {
     return quiz ? this.formatQuiz(quiz) : null
   }
 
+  async getOnboardingQuiz(): Promise<Quiz | null> {
+    const quiz = await prisma.quiz.findFirst({
+      where: { 
+        category: 'ONBOARDING',
+        status: 'ACTIVE',
+        isPublic: true,
+        redirectAfterAnswer: 'HOME'
+      },
+      include: {
+        questions: {
+          include: {
+            options: {
+              orderBy: { order: 'asc' }
+            }
+          },
+          orderBy: { order: 'asc' }
+        },
+        gradingCriteria: {
+          orderBy: { minScore: 'asc' }
+        },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return quiz ? this.formatQuiz(quiz) : null
+  }
+
   async updateQuiz(id: string, data: UpdateQuizData, updatedBy: string): Promise<Quiz> {
     // Check if user has permission to update this quiz
     const existingQuiz = await prisma.quiz.findUnique({
