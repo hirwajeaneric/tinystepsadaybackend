@@ -28,6 +28,7 @@ export interface GradingCriteria {
   proposedCourses: Array<{ id: string; name: string; slug: string }>
   proposedProducts: Array<{ id: string; name: string; slug: string }>
   proposedStreaks: Array<{ id: string; name: string; slug: string }>
+  proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
   description?: string
 }
 
@@ -87,6 +88,7 @@ export interface QuizResult {
   proposedCourses?: Array<{ id: string; name: string; slug: string }>
   proposedProducts?: Array<{ id: string; name: string; slug: string }>
   proposedStreaks?: Array<{ id: string; name: string; slug: string }>
+  proposedBlogPosts?: Array<{ id: string; title: string; slug: string }>
 }
 
 // Quiz Analytics Interface
@@ -151,6 +153,7 @@ export interface CreateQuizData {
     proposedCourses: Array<{ id: string; name: string; slug: string }>
     proposedProducts: Array<{ id: string; name: string; slug: string }>
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
+    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
   }>
 }
@@ -187,6 +190,7 @@ export interface UpdateQuizData {
     proposedCourses: Array<{ id: string; name: string; slug: string }>
     proposedProducts: Array<{ id: string; name: string; slug: string }>
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
+    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
   }>
 }
@@ -244,4 +248,5 @@ export interface QuizResultCalculation {
   proposedCourses: Array<{ id: string; name: string; slug: string }>
   proposedProducts: Array<{ id: string; name: string; slug: string }>
   proposedStreaks: Array<{ id: string; name: string; slug: string }>
+  proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
 }

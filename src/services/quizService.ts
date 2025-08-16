@@ -47,6 +47,7 @@ export class QuizService {
             proposedCourses: criteria.proposedCourses,
             proposedProducts: criteria.proposedProducts,
             proposedStreaks: criteria.proposedStreaks,
+            proposedBlogPosts: criteria.proposedBlogPosts,
             description: criteria.description
           }))
         }
@@ -121,6 +122,7 @@ export class QuizService {
         proposedCourses: gc.proposedCourses,
         proposedProducts: gc.proposedProducts,
         proposedStreaks: gc.proposedStreaks,
+        proposedBlogPosts: gc.proposedBlogPosts,
         description: gc.description
       })) || [],
       createdByUser: quiz.createdByUser
@@ -324,6 +326,7 @@ export class QuizService {
               proposedCourses: criteria.proposedCourses,
               proposedProducts: criteria.proposedProducts,
               proposedStreaks: criteria.proposedStreaks,
+              proposedBlogPosts: criteria.proposedBlogPosts,
               description: criteria.description
             }))
           }
@@ -422,7 +425,8 @@ export class QuizService {
         supportNeeded: result.supportNeeded,
         proposedCourses: result.proposedCourses,
         proposedProducts: result.proposedProducts,
-        proposedStreaks: result.proposedStreaks
+        proposedStreaks: result.proposedStreaks,
+        proposedBlogPosts: result.proposedBlogPosts
       },
       include: {
         quiz: {
@@ -647,6 +651,7 @@ export class QuizService {
     let proposedCourses: Array<{ id: string; name: string; slug: string }> = []
     let proposedProducts: Array<{ id: string; name: string; slug: string }> = []
     let proposedStreaks: Array<{ id: string; name: string; slug: string }> = []
+    let proposedBlogPosts: Array<{ id: string; title: string; slug: string }> = []
 
     if (matchingCriteria) {
       // Map criteria name to level
@@ -671,6 +676,7 @@ export class QuizService {
       proposedCourses = matchingCriteria.proposedCourses || []
       proposedProducts = matchingCriteria.proposedProducts || []
       proposedStreaks = matchingCriteria.proposedStreaks || []
+      proposedBlogPosts = matchingCriteria.proposedBlogPosts || []
     } else {
       // Fallback to default logic
       if (percentage >= 80) {
@@ -732,7 +738,8 @@ export class QuizService {
       supportNeeded,
       proposedCourses,
       proposedProducts,
-      proposedStreaks
+      proposedStreaks,
+      proposedBlogPosts
     }
   }
 
@@ -777,7 +784,8 @@ export class QuizService {
       supportNeeded: result.supportNeeded,
       proposedCourses: result.proposedCourses || [],
       proposedProducts: result.proposedProducts || [],
-      proposedStreaks: result.proposedStreaks || []
+      proposedStreaks: result.proposedStreaks || [],
+      proposedBlogPosts: result.proposedBlogPosts || []
     }
   }
 }

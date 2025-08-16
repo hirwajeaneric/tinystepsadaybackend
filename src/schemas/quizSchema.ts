@@ -38,6 +38,11 @@ export const gradingCriteriaSchema = z.object({
     name: z.string().min(1, "Streak name is required"),
     slug: z.string().min(1, "Streak slug is required")
   })).default([]),
+  proposedBlogPosts: z.array(z.object({
+    id: z.string().min(1, "Blog post ID is required"),
+    title: z.string().min(1, "Blog post title is required"),
+    slug: z.string().min(1, "Blog post slug is required")
+  })).default([]),
   description: z.string().max(500, "Description must be less than 500 characters").optional()
 })
 
@@ -217,6 +222,7 @@ export const quizResponseSchema = z.object({
     proposedCourses: z.array(z.any()),
     proposedProducts: z.array(z.any()),
     proposedStreaks: z.array(z.any()),
+    proposedBlogPosts: z.array(z.any()),
     description: z.string().nullable()
   }))
 })

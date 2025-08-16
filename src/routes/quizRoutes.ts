@@ -21,10 +21,7 @@ router.get("/public/quizzes/:id", quizController.getPublicQuizById as RequestHan
 
 // Public categories and difficulties for filtering
 router.get("/categories", quizController.getQuizCategories as RequestHandler)
-router.get("/difficulties", quizController.getQuizDifficulties as RequestHandler)
-
-// Public quiz results (no authentication required)
-router.get("/results/:id", quizController.getQuizResultById as RequestHandler)
+router.get("/quizDifficulties", quizController.getQuizDifficulties as RequestHandler)
 
 // Protected routes (authentication required)
 router.use(authenticate as RequestHandler)
@@ -42,6 +39,7 @@ router.get("/quizzes/:id/analytics", quizController.getQuizAnalytics as RequestH
 // Quiz Results
 router.post("/results", validate({ body: quizSubmissionSchema }), quizController.submitQuiz as RequestHandler)
 router.get("/results", validate({ query: quizResultQuerySchema }), quizController.getQuizResults as RequestHandler)
-router.get("/user/results", quizController.getUserQuizResults as RequestHandler)
+router.get("/results/user", quizController.getUserQuizResults as RequestHandler)
+router.get("/results/:id", quizController.getQuizResultById as RequestHandler)
 
 export default router

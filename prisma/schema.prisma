@@ -376,6 +376,7 @@ model GradingCriteria {
   proposedCourses     Json[]   @default([]) // Array of { id, name, slug }
   proposedProducts    Json[]   @default([]) // Array of { id, name, slug }
   proposedStreaks     Json[]   @default([]) // Array of { id, name, slug }
+  proposedBlogPosts   Json[]   @default([]) // Array of { id, title, slug }
   description         String?
   quizId              String   @db.ObjectId
   createdAt           DateTime @default(now())
@@ -406,6 +407,7 @@ model QuizResult {
   proposedCourses      Json[]           @default([]) // Array of { id, name, slug }
   proposedProducts     Json[]           @default([]) // Array of { id, name, slug }
   proposedStreaks      Json[]           @default([]) // Array of { id, name, slug }
+  proposedBlogPosts    Json[]           @default([]) // Array of { id, title, slug }
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
