@@ -73,7 +73,6 @@ export const quizUpdateSchema = quizSchema.partial().extend({
 export const quizQuerySchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
-  difficulty: z.string().optional(),
   status: z.string().optional(),
   isPublic: z.string().optional(),
   createdBy: z.string().optional(),
@@ -85,12 +84,9 @@ export const quizQuerySchema = z.object({
 }).transform((data) => {
   const transformed: any = { ...data }
   
-  // Handle "all" filter for category, difficulty, status, and isPublic
+  // Handle "all" filter for category and status
   if (transformed.category === "all") {
     transformed.category = undefined
-  }
-  if (transformed.difficulty === "all") {
-    transformed.difficulty = undefined
   }
   if (transformed.status === "all") {
     transformed.status = undefined
@@ -99,15 +95,12 @@ export const quizQuerySchema = z.object({
     transformed.isPublic = undefined
   }
   
-  // Convert string values to proper types
-  if (transformed.difficulty && transformed.difficulty !== "all") {
-    transformed.difficulty = transformed.difficulty as QuizDifficulty
+  // Convert string numbers to actual numbers
+  if (typeof transformed.page === 'string') {
+    transformed.page = parseInt(transformed.page, 10)
   }
-  if (transformed.status && transformed.status !== "all") {
-    transformed.status = transformed.status as QuizStatus
-  }
-  if (transformed.isPublic !== undefined && transformed.isPublic !== "all") {
-    transformed.isPublic = transformed.isPublic === "true"
+  if (typeof transformed.limit === 'string') {
+    transformed.limit = parseInt(transformed.limit, 10)
   }
   
   return transformed
@@ -117,7 +110,6 @@ export const quizQuerySchema = z.object({
 export const publicQuizQuerySchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
-  difficulty: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt", "title", "totalAttempts", "averageScore"]).default("createdAt"),
@@ -125,17 +117,9 @@ export const publicQuizQuerySchema = z.object({
 }).transform((data) => {
   const transformed: any = { ...data }
   
-  // Handle "all" filter for category and difficulty
+  // Handle "all" filter for category
   if (transformed.category === "all") {
     transformed.category = undefined
-  }
-  if (transformed.difficulty === "all") {
-    transformed.difficulty = undefined
-  }
-  
-  // Convert string values to proper types
-  if (transformed.difficulty && transformed.difficulty !== "all") {
-    transformed.difficulty = transformed.difficulty as QuizDifficulty
   }
   
   return transformed

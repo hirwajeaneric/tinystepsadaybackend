@@ -200,8 +200,7 @@ export interface UpdateQuizData {
 export interface QuizQuery {
   search?: string
   category?: string
-  difficulty?: QuizDifficulty
-  status?: QuizStatus
+  status?: string | QuizStatus
   isPublic?: boolean
   createdBy?: string
   tags?: string[]

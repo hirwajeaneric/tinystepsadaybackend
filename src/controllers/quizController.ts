@@ -341,13 +341,9 @@ export class QuizController {
     try {
       const query = (req as any).validatedQuery || quizQuerySchema.parse(req.query)
       
-      // Override to only show public and active quizzes
-      query.isPublic = true
-      query.status = 'ACTIVE'
-      query.quizType = 'DEFAULT'
-
+      // Use the new enhanced public quizzes method
+      const result = await quizService.getPublicQuizzes(query)
       
-      const result = await quizService.getQuizzes(query)
       return res.json({
         success: true,
         message: "Public quizzes retrieved successfully",

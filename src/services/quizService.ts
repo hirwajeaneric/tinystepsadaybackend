@@ -1,8 +1,8 @@
 import { PrismaClient, QuizResultLevel } from "@prisma/client"
 import { NotFoundError, AuthorizationError, ValidationError } from "../utils/errors"
-import type { 
-  Quiz, 
-  UpdateQuizData, 
+import type {
+  Quiz,
+  UpdateQuizData,
   CreateQuizData,
   QuizQuery,
   QuizResult,
@@ -130,7 +130,7 @@ export class QuizService {
   }
 
   async getQuizzes(query: QuizQuery): Promise<{ quizzes: Quiz[]; total: number; page: number; totalPages: number }> {
-    const { search, category, difficulty, status, isPublic, createdBy, tags, quizType, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query
+    const { search, category, status, isPublic, createdBy, tags, quizType, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query
     const skip = (page - 1) * limit
 
     const where: any = {}
@@ -145,10 +145,6 @@ export class QuizService {
 
     if (category) {
       where.category = category
-    }
-
-    if (difficulty) {
-      where.difficulty = difficulty
     }
 
     if (status) {
@@ -245,7 +241,7 @@ export class QuizService {
 
   async getPublicQuizById(id: string): Promise<Quiz | null> {
     const quiz = await prisma.quiz.findFirst({
-      where: { 
+      where: {
         id,
         isPublic: true,
         status: 'ACTIVE'
@@ -270,7 +266,7 @@ export class QuizService {
 
   async getOnboardingQuiz(): Promise<Quiz | null> {
     const quiz = await prisma.quiz.findFirst({
-      where: { 
+      where: {
         category: 'ONBOARDING',
         status: 'ACTIVE',
         isPublic: true,
@@ -666,6 +662,101 @@ export class QuizService {
     }
   }
 
+  async getPublicQuizzes(query: QuizQuery): Promise<{ quizzes: Quiz[]; total: number; page: number; totalPages: number; categories: string[] }> {
+    const { search, category, status, tags, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query
+    const skip = (page - 1) * limit
+
+    const where: any = {
+      isPublic: true,
+      status: 'ACTIVE',
+      quizType: 'DEFAULT'
+    }
+
+    // Enhanced search functionality
+    if (search && search.trim()) {
+      const searchTerm = search.trim()
+      where.OR = [
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { subtitle: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
+        { category: { contains: searchTerm, mode: 'insensitive' } },
+        { tags: { hasSome: [searchTerm] } }
+      ]
+    }
+
+    // Category filtering with "all" support
+    if (category && category !== 'all' && category.trim()) {
+      where.category = category.trim()
+    }
+
+
+
+    // Status filtering with "all" support
+    if (status && status !== 'all' && status.trim()) {
+      where.status = status.trim()
+    }
+
+    // Tags filtering
+    if (tags && tags.length > 0) {
+      where.tags = {
+        hasSome: tags
+      }
+    }
+
+    // Get available categories for the current filter set
+    const categoryQuery = { ...where }
+    delete categoryQuery.skip
+    delete categoryQuery.take
+    delete categoryQuery.orderBy
+
+    const [quizzes, total, categories] = await Promise.all([
+      prisma.quiz.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy as string]: sortOrder },
+        include: {
+          questions: {
+            include: {
+              options: {
+                orderBy: { order: 'asc' }
+              }
+            },
+            orderBy: { order: 'asc' }
+          },
+          gradingCriteria: {
+            orderBy: { minScore: 'asc' }
+          },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
+          }
+        }
+      }),
+      prisma.quiz.count({ where }),
+      prisma.quiz.findMany({
+        where: categoryQuery,
+        select: { category: true },
+        distinct: ['category']
+      })
+    ])
+
+    const totalPages = Math.ceil(total / limit)
+    const uniqueCategories = [...new Set(categories.map(c => c.category))].sort()
+
+    return {
+      quizzes: quizzes.map(quiz => this.formatQuiz(quiz)),
+      total,
+      page,
+      totalPages,
+      categories: uniqueCategories
+    }
+  }
+
   // Private helper methods
   private calculateQuizResult(quiz: any, answers: any[]): QuizResultCalculation {
     let totalScore = 0
@@ -686,7 +777,7 @@ export class QuizService {
     const percentage = Math.round((totalScore / maxScore) * 100)
 
     // Find the appropriate grading criteria
-    const matchingCriteria = quiz.gradingCriteria.find((criteria: any) => 
+    const matchingCriteria = quiz.gradingCriteria.find((criteria: any) =>
       percentage >= criteria.minScore && percentage <= criteria.maxScore
     )
 
@@ -719,7 +810,7 @@ export class QuizService {
       classification = matchingCriteria.label
       areasOfImprovement = ["Focus on areas for improvement"]
       supportNeeded = ["Consider the recommended courses and products"]
-      
+
       // Include recommended items from grading criteria
       proposedCourses = matchingCriteria.proposedCourses || []
       proposedProducts = matchingCriteria.proposedProducts || []
