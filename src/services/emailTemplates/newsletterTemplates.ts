@@ -94,14 +94,14 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
         }
         .btn-primary {
             background-color: #3498db;
-            color: white;
+            color: white !important;
         }
         .btn-primary:hover {
             background-color: #2980b9;
         }
         .btn-secondary {
             background-color: #95a5a6;
-            color: white;
+            color: white !important;
         }
         .btn-secondary:hover {
             background-color: #7f8c8d;
@@ -246,7 +246,7 @@ export const unsubscribeConfirmationTemplate = (data: BaseEmailTemplateData & {
             display: inline-block;
             padding: 12px 24px;
             background-color: #3498db;
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: bold;
@@ -366,7 +366,7 @@ export const newsletterUpdateTemplate = (data: BaseEmailTemplateData & {
             display: inline-block;
             padding: 12px 24px;
             background-color: #3498db;
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: bold;
