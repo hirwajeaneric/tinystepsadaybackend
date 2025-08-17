@@ -23,6 +23,8 @@ export const gradingCriteriaSchema = z.object({
   label: z.string().min(1, "Label is required").max(100, "Label must be less than 100 characters"),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color"),
   recommendations: z.array(z.string().min(1, "Recommendation cannot be empty").max(200, "Recommendation must be less than 200 characters")).min(1, "At least one recommendation is required"),
+  areasOfImprovement: z.array(z.string().min(1, "Area of improvement cannot be empty").max(200, "Area of improvement must be less than 200 characters")).default([]),
+  supportNeeded: z.array(z.string().min(1, "Support needed cannot be empty").max(200, "Support needed must be less than 200 characters")).default([]),
   proposedCourses: z.array(z.object({
     id: z.string().min(1, "Course ID is required"),
     name: z.string().min(1, "Course name is required"),
@@ -227,6 +229,7 @@ export const quizResultResponseSchema = z.object({
   classification: z.string(),
   areasOfImprovement: z.array(z.string()),
   supportNeeded: z.array(z.string()),
+  color: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   quiz: z.object({

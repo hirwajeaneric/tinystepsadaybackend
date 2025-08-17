@@ -373,6 +373,8 @@ model GradingCriteria {
   label               String
   color               String
   recommendations     String[]
+  areasOfImprovement  String[] @default([])
+  supportNeeded       String[] @default([])
   proposedCourses     Json[]   @default([]) // Array of { id, name, slug }
   proposedProducts    Json[]   @default([]) // Array of { id, name, slug }
   proposedStreaks     Json[]   @default([]) // Array of { id, name, slug }
@@ -404,6 +406,7 @@ model QuizResult {
   classification       String
   areasOfImprovement   String[]
   supportNeeded        String[]
+  color               String?              // Color from grading criteria for UI styling
   proposedCourses      Json[]           @default([]) // Array of { id, name, slug }
   proposedProducts     Json[]           @default([]) // Array of { id, name, slug }
   proposedStreaks      Json[]           @default([]) // Array of { id, name, slug }

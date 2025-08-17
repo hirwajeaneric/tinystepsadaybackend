@@ -44,6 +44,8 @@ export class QuizService {
             label: criteria.label,
             color: criteria.color,
             recommendations: criteria.recommendations,
+            areasOfImprovement: criteria.areasOfImprovement || [],
+            supportNeeded: criteria.supportNeeded || [],
             proposedCourses: criteria.proposedCourses,
             proposedProducts: criteria.proposedProducts,
             proposedStreaks: criteria.proposedStreaks,
@@ -460,7 +462,8 @@ export class QuizService {
         proposedCourses: result.proposedCourses,
         proposedProducts: result.proposedProducts,
         proposedStreaks: result.proposedStreaks,
-        proposedBlogPosts: result.proposedBlogPosts
+        proposedBlogPosts: result.proposedBlogPosts,
+        color: result.color
       },
       include: {
         quiz: {
@@ -776,9 +779,9 @@ export class QuizService {
 
     const percentage = Math.round((totalScore / maxScore) * 100)
 
-    // Find the appropriate grading criteria
+    // Find the appropriate grading criteria using raw scores, not percentages
     const matchingCriteria = quiz.gradingCriteria.find((criteria: any) =>
-      percentage >= criteria.minScore && percentage <= criteria.maxScore
+      totalScore >= criteria.minScore && totalScore <= criteria.maxScore
     )
 
     let level: QuizResultLevel
@@ -806,10 +809,10 @@ export class QuizService {
       }
 
       feedback = matchingCriteria.description || `You scored in the ${matchingCriteria.name} range.`
-      recommendations = matchingCriteria.recommendations
-      classification = matchingCriteria.label
-      areasOfImprovement = ["Focus on areas for improvement"]
-      supportNeeded = ["Consider the recommended courses and products"]
+      recommendations = matchingCriteria.recommendations || []
+      classification = matchingCriteria.label || matchingCriteria.name
+      areasOfImprovement = matchingCriteria.areasOfImprovement || []
+      supportNeeded = matchingCriteria.supportNeeded || []
 
       // Include recommended items from grading criteria
       proposedCourses = matchingCriteria.proposedCourses || []
@@ -878,7 +881,8 @@ export class QuizService {
       proposedCourses,
       proposedProducts,
       proposedStreaks,
-      proposedBlogPosts
+      proposedBlogPosts,
+      color: matchingCriteria?.color
     }
   }
 
@@ -921,6 +925,7 @@ export class QuizService {
       classification: result.classification,
       areasOfImprovement: result.areasOfImprovement,
       supportNeeded: result.supportNeeded,
+      color: result.color,
       proposedCourses: result.proposedCourses || [],
       proposedProducts: result.proposedProducts || [],
       proposedStreaks: result.proposedStreaks || [],
