@@ -106,8 +106,8 @@ Creates a new file record in the database.
       "location": "California",
       "camera": "iPhone 12"
     },
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z",
+    "createdAt": "2025-01-15T10:30:00.000Z",
+    "updatedAt": "2025-01-15T10:30:00.000Z",
     "uploadedByUser": {
       "id": "507f1f77bcf86cd799439012",
       "username": "john_doe",
@@ -164,8 +164,8 @@ GET /api/files?page=1&limit=20&type=IMAGE&isPublic=true&sortBy=createdAt&sortOrd
         "isPublic": true,
         "tags": ["nature", "sunset"],
         "metadata": {},
-        "createdAt": "2024-01-15T10:30:00.000Z",
-        "updatedAt": "2024-01-15T10:30:00.000Z",
+        "createdAt": "2025-01-15T10:30:00.000Z",
+        "updatedAt": "2025-01-15T10:30:00.000Z",
         "uploadedByUser": {
           "id": "507f1f77bcf86cd799439012",
           "username": "john_doe",
@@ -227,8 +227,8 @@ Retrieves a specific file by its ID.
     "isPublic": true,
     "tags": ["nature", "sunset"],
     "metadata": {},
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z",
+    "createdAt": "2025-01-15T10:30:00.000Z",
+    "updatedAt": "2025-01-15T10:30:00.000Z",
     "uploadedByUser": {
       "id": "507f1f77bcf86cd799439012",
       "username": "john_doe",
@@ -286,8 +286,8 @@ Updates file metadata.
       "camera": "iPhone 12",
       "updated": true
     },
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T11:00:00.000Z",
+    "createdAt": "2025-01-15T10:30:00.000Z",
+    "updatedAt": "2025-01-15T11:00:00.000Z",
     "uploadedByUser": {
       "id": "507f1f77bcf86cd799439012",
       "username": "john_doe",
@@ -355,8 +355,8 @@ GET /api/files/search?q=sunset&limit=10
       "isPublic": true,
       "tags": ["nature", "sunset"],
       "metadata": {},
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "updatedAt": "2025-01-15T10:30:00.000Z",
       "uploadedByUser": {
         "id": "507f1f77bcf86cd799439012",
         "username": "john_doe",
@@ -444,8 +444,8 @@ Retrieves files uploaded by the current authenticated user.
       "isPublic": true,
       "tags": ["personal"],
       "metadata": {},
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "updatedAt": "2025-01-15T10:30:00.000Z",
       "uploadedByUser": {
         "id": "507f1f77bcf86cd799439012",
         "username": "john_doe",

@@ -69,8 +69,8 @@ Content-Type: application/json
     "tags": ["inquiry", "general"],
     "ipAddress": "192.168.1.100",
     "userAgent": "Mozilla/5.0...",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "updatedAt": "2024-01-15T10:30:00Z"
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T10:30:00Z"
   }
 }
 ```
@@ -126,8 +126,8 @@ or
           "email": "admin@tinystepsaday.com"
         },
         "replies": [],
-        "createdAt": "2024-01-15T10:30:00Z",
-        "updatedAt": "2024-01-15T10:30:00Z"
+        "createdAt": "2025-01-15T10:30:00Z",
+        "updatedAt": "2025-01-15T10:30:00Z"
       }
     ],
     "total": 1,
@@ -182,7 +182,7 @@ or
         "sentBy": "ADMIN",
         "sentByUser": "user_123",
         "attachments": [],
-        "createdAt": "2024-01-15T11:00:00Z",
+        "createdAt": "2025-01-15T11:00:00Z",
         "user": {
           "id": "user_123",
           "firstName": "Admin",
@@ -191,10 +191,10 @@ or
         }
       }
     ],
-    "readAt": "2024-01-15T10:45:00Z",
-    "repliedAt": "2024-01-15T11:00:00Z",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "updatedAt": "2024-01-15T11:00:00Z"
+    "readAt": "2025-01-15T10:45:00Z",
+    "repliedAt": "2025-01-15T11:00:00Z",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T11:00:00Z"
   }
 }
 ```
@@ -236,8 +236,8 @@ or
     "category": "SUPPORT",
     "assignedTo": "user_123",
     "tags": ["urgent", "support", "escalated"],
-    "readAt": "2024-01-15T12:00:00Z",
-    "updatedAt": "2024-01-15T12:00:00Z"
+    "readAt": "2025-01-15T12:00:00Z",
+    "updatedAt": "2025-01-15T12:00:00Z"
   }
 }
 ```
@@ -309,8 +309,8 @@ or
     "category": "SUPPORT",
     "isDefault": false,
     "createdBy": "user_123",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "updatedAt": "2024-01-15T10:30:00Z",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T10:30:00Z",
     "createdByUser": {
       "id": "user_123",
       "firstName": "Admin",
@@ -356,8 +356,8 @@ or
       "category": "SUPPORT",
       "isDefault": true,
       "createdBy": "user_123",
-      "createdAt": "2024-01-15T10:30:00Z",
-      "updatedAt": "2024-01-15T10:30:00Z",
+      "createdAt": "2025-01-15T10:30:00Z",
+      "updatedAt": "2025-01-15T10:30:00Z",
       "createdByUser": {
         "id": "user_123",
         "firstName": "Admin",
@@ -394,8 +394,8 @@ or
     "category": "SUPPORT",
     "isDefault": true,
     "createdBy": "user_123",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "updatedAt": "2024-01-15T10:30:00Z",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T10:30:00Z",
     "createdByUser": {
       "id": "user_123",
       "firstName": "Admin",
@@ -440,7 +440,7 @@ or
     "content": "Hi {{name}},\n\nWe understand your concern...",
     "category": "SUPPORT",
     "isDefault": true,
-    "updatedAt": "2024-01-15T12:00:00Z"
+    "updatedAt": "2025-01-15T12:00:00Z"
   }
 }
 ```
@@ -483,7 +483,7 @@ or
 
 **Query Parameters:**
 ```
-?dateFrom=2024-01-01T00:00:00Z&dateTo=2024-01-31T23:59:59Z
+?dateFrom=2025-01-01T00:00:00Z&dateTo=2025-01-31T23:59:59Z
 ```
 
 **Response (200):**

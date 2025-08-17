@@ -26,7 +26,7 @@ export const roleChangedTemplate = `
         }
         .header {
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            color: white;
+            color: white !important;
             padding: 30px;
             text-align: center;
         }
@@ -42,7 +42,7 @@ export const roleChangedTemplate = `
         .role-badge {
             display: inline-block;
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            color: white;
+            color: white !important;
             padding: 8px 16px;
             border-radius: 20px;
             font-weight: bold;
@@ -51,7 +51,7 @@ export const roleChangedTemplate = `
         .login-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -109,7 +109,7 @@ export const roleChangedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -142,7 +142,7 @@ export const accountStatusChangedTemplate = `
         }
         .header {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
             padding: 30px;
             text-align: center;
         }
@@ -167,16 +167,16 @@ export const accountStatusChangedTemplate = `
         }
         .status-active {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
         }
         .status-inactive {
             background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
+            color: white !important;
         }
         .action-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -245,7 +245,7 @@ export const accountStatusChangedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -278,7 +278,7 @@ export const welcomeEmailTemplate = `
         }
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 30px;
             text-align: center;
         }
@@ -300,7 +300,7 @@ export const welcomeEmailTemplate = `
         }
         .feature-list li {
             margin: 10px 0;
-            padding-left: 20px;
+            padding-left: 10px;
             position: relative;
         }
         .feature-list li:before {
@@ -313,7 +313,7 @@ export const welcomeEmailTemplate = `
         .get-started-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 18px 40px;
             text-decoration: none;
             border-radius: 25px;
@@ -370,7 +370,7 @@ export const welcomeEmailTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -403,7 +403,7 @@ export const profileUpdatedTemplate = `
         }
         .header {
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            color: white;
+            color: white !important;
             padding: 30px;
             text-align: center;
         }
@@ -438,7 +438,7 @@ export const profileUpdatedTemplate = `
         .view-profile-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -498,7 +498,7 @@ export const profileUpdatedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>

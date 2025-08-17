@@ -60,7 +60,7 @@ export const paymentSuccessTemplate = `
         .view-receipt-button {
             display: inline-block;
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -109,7 +109,7 @@ export const paymentSuccessTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
             <p>If you have any questions about this payment, please contact our support team.</p>
         </div>
@@ -172,7 +172,7 @@ export const paymentFailedTemplate = `
         .retry-button {
             display: inline-block;
             background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -229,7 +229,7 @@ export const paymentFailedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -285,7 +285,7 @@ export const subscriptionRenewalTemplate = `
         .manage-subscription-button {
             display: inline-block;
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -334,7 +334,7 @@ export const subscriptionRenewalTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -390,7 +390,7 @@ export const subscriptionCancelledTemplate = `
         .reactivate-button {
             display: inline-block;
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -441,7 +441,7 @@ export const subscriptionCancelledTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>

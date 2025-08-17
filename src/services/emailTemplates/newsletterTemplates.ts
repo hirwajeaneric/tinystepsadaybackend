@@ -67,6 +67,10 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
             border-radius: 8px;
             margin: 20px 0;
         }
+        .feature-list {
+            list-style-type: none;
+            padding-left: 20px;
+        }
         .feature-item {
             margin-bottom: 10px;
             padding-left: 20px;
@@ -93,18 +97,18 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
             transition: all 0.3s ease;
         }
         .btn-primary {
-            background-color: #3498db;
+            background-color: #8a86fc;
             color: white !important;
         }
         .btn-primary:hover {
-            background-color: #2980b9;
+            background-color: #b7b4fd;
         }
         .btn-secondary {
-            background-color: #95a5a6;
-            color: white !important;
+            background-color: #f1f0fc;
+            color: #8a86fc !important;
         }
         .btn-secondary:hover {
-            background-color: #7f8c8d;
+            background-color: #f1f0fc;
         }
         .footer {
             text-align: center;
@@ -127,7 +131,7 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
         .social-links a {
             display: inline-block;
             margin: 0 10px;
-            color: #3498db;
+            color: #8a86fc;
             text-decoration: none;
         }
         .social-links a:hover {
@@ -154,11 +158,13 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
             
             <div class="features">
                 <h3>What you can expect from us:</h3>
-                <div class="feature-item">Weekly insights and inspiration for personal growth</div>
-                <div class="feature-item">Exclusive content and early access to new programs</div>
-                <div class="feature-item">Mindfulness tips and practical strategies</div>
-                <div class="feature-item">Community updates and success stories</div>
-                <div class="feature-item">Special offers and discounts on our courses</div>
+                <ul class="feature-list">
+                <li class="feature-item">Weekly insights and inspiration for personal growth</li>
+                <li class="feature-item">Exclusive content and early access to new programs</li>
+                <li class="feature-item">Mindfulness tips and practical strategies</li>
+                <li class="feature-item">Community updates and success stories</li>
+                <li class="feature-item">Special offers and discounts on our courses</li>
+                </ul>
             </div>
             
             <p>
@@ -176,7 +182,6 @@ export const welcomeNewsletterTemplate = (data: BaseEmailTemplateData & {
                 You're receiving this email because you subscribed to our newsletter.
             </p>
             <p>
-                <a href="${data.preferencesUrl}" class="unsubscribe-link">Manage Preferences</a> | 
                 <a href="${data.unsubscribeUrl}" class="unsubscribe-link">Unsubscribe</a>
             </p>
             <p>
@@ -245,7 +250,7 @@ export const unsubscribeConfirmationTemplate = (data: BaseEmailTemplateData & {
         .btn {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #3498db;
+            background-color: #8a86fc;
             color: white !important;
             text-decoration: none;
             border-radius: 6px;
@@ -253,7 +258,7 @@ export const unsubscribeConfirmationTemplate = (data: BaseEmailTemplateData & {
             transition: all 0.3s ease;
         }
         .btn:hover {
-            background-color: #2980b9;
+            background-color: #b7b4fd;
         }
         .footer {
             text-align: center;
@@ -365,7 +370,7 @@ export const newsletterUpdateTemplate = (data: BaseEmailTemplateData & {
         .btn {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #3498db;
+            background-color: #8a86fc;
             color: white !important;
             text-decoration: none;
             border-radius: 6px;
@@ -373,7 +378,7 @@ export const newsletterUpdateTemplate = (data: BaseEmailTemplateData & {
             transition: all 0.3s ease;
         }
         .btn:hover {
-            background-color: #2980b9;
+            background-color: #b7b4fd;
         }
         .footer {
             text-align: center;

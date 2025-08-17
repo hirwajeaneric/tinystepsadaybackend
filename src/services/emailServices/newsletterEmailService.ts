@@ -92,7 +92,7 @@ export const sendUnsubscribeConfirmationEmail = async (
       userEmail,
       imageUrl: getImageUrl(),
       clientUrl: getClientUrl(),
-      resubscribeUrl: `${getClientUrl()}/subscribe?email=${encodeURIComponent(userEmail)}`,
+      resubscribeUrl: `${getClientUrl()}`,
     };
 
     const processedHtml = unsubscribeConfirmationTemplate(templateData);

@@ -49,7 +49,7 @@ export const generalNotificationTemplate = `
         .action-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -100,7 +100,7 @@ export const generalNotificationTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -217,7 +217,7 @@ export const achievementNotificationTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -278,7 +278,7 @@ export const reminderNotificationTemplate = `
         .complete-button {
             display: inline-block;
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -327,7 +327,7 @@ export const reminderNotificationTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -400,7 +400,7 @@ export const challengeNotificationTemplate = `
         .join-challenge-button {
             display: inline-block;
             background: linear-gradient(135deg, #e83e8c 0%, #dc3545 100%);
-            color: white;
+            color: white !important;
             padding: 18px 40px;
             text-decoration: none;
             border-radius: 25px;
@@ -464,7 +464,7 @@ export const challengeNotificationTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>

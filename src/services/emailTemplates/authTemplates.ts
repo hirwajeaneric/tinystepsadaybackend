@@ -54,7 +54,7 @@ export const emailVerificationTemplate = `
         .button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -83,7 +83,7 @@ export const emailVerificationTemplate = `
         .verification-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 18px 40px;
             text-decoration: none;
             border-radius: 25px;
@@ -144,7 +144,7 @@ export const emailVerificationTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -193,7 +193,7 @@ export const passwordResetTemplate = `
         .reset-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 18px 40px;
             text-decoration: none;
             border-radius: 25px;
@@ -275,7 +275,7 @@ export const passwordResetTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
             <p>If you have any questions, please contact our support team.</p>
         </div>
@@ -379,7 +379,7 @@ export const passwordChangedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
             <p>If you have any questions, please contact our support team.</p>
         </div>
@@ -429,7 +429,7 @@ export const accountActivatedTemplate = `
         .welcome-button {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -470,7 +470,7 @@ export const accountActivatedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
@@ -519,7 +519,7 @@ export const accountDeactivatedTemplate = `
         .reactivate-button {
             display: inline-block;
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
+            color: white !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -575,7 +575,7 @@ export const accountDeactivatedTemplate = `
         </div>
         
         <div class="footer">
-            <p>&copy; 2024 Tiny Steps A Day. All rights reserved.</p>
+            <p>&copy; 2025 Tiny Steps A Day. All rights reserved.</p>
             <p>This email was sent to {{userEmail}}</p>
         </div>
     </div>
