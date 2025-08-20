@@ -8,11 +8,26 @@ export interface QuizOption {
   order: number
 }
 
+// Quiz Dimension Interface
+export interface QuizDimension {
+  id: string
+  name: string
+  shortName: string
+  order: number
+  minScore: number
+  maxScore: number
+  threshold?: number
+  lowLabel?: string
+  highLabel?: string
+}
+
 // Quiz Question Interface
 export interface QuizQuestion {
   id: string
   text: string
   order: number
+  dimensionId?: string
+  dimension?: QuizDimension
   options: QuizOption[]
 }
 
@@ -32,6 +47,30 @@ export interface GradingCriteria {
   proposedStreaks: Array<{ id: string; name: string; slug: string }>
   proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
   description?: string
+}
+
+// Complex Grading Criteria Interface
+export interface ComplexGradingCriteria {
+  id: string
+  name: string
+  label: string
+  color: string
+  recommendations: string[]
+  areasOfImprovement?: string[]
+  supportNeeded?: string[]
+  proposedCourses: Array<{ id: string; name: string; slug: string }>
+  proposedProducts: Array<{ id: string; name: string; slug: string }>
+  proposedStreaks: Array<{ id: string; name: string; slug: string }>
+  proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
+  description?: string
+  scoringLogic: {
+    type: 'threshold' | 'highest' | 'topN'
+    dimensions?: Array<{ name: string; value?: string; threshold?: number }>
+    dimension?: string
+    minScore?: number
+    maxScore?: number
+    n?: number
+  }
 }
 
 // Quiz Interface
@@ -57,6 +96,8 @@ export interface Quiz {
   createdBy: string
   questions: QuizQuestion[]
   gradingCriteria: GradingCriteria[]
+  complexGradingCriteria: ComplexGradingCriteria[]
+  dimensions: QuizDimension[]
   createdByUser?: {
     id: string
     firstName?: string
@@ -75,24 +116,29 @@ export interface QuizResult {
     lastName?: string
     email?: string
   }
-  score: number
-  maxScore: number
-  percentage: number
-  level?: string
-  feedback?: string
-  recommendations?: string[]
+  score?: number
+  maxScore?: number
+  dimensionScores?: Record<string, number>
+  percentage?: number
+  level?: QuizResultLevel
+  feedback: string
+  recommendations: string[]
   completedAt: string
-  timeSpent?: number
-  answers?: Record<string, string>
-  classification?: string
-  areasOfImprovement?: string[]
-  supportNeeded?: string[]
+  timeSpent: number
+  answers: Record<string, string>
+  classification: string
+  areasOfImprovement: string[]
+  supportNeeded: string[]
   color?: string
-  proposedCourses?: Array<{ id: string; name: string; slug: string }>
-  proposedProducts?: Array<{ id: string; name: string; slug: string }>
-  proposedStreaks?: Array<{ id: string; name: string; slug: string }>
-  proposedBlogPosts?: Array<{ id: string; title: string; slug: string }>
-  quiz?: Quiz
+  proposedCourses: Array<{ id: string; name: string; slug: string }>
+  proposedProducts: Array<{ id: string; name: string; slug: string }>
+  proposedStreaks: Array<{ id: string; name: string; slug: string }>
+  proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
+  quiz?: {
+    id: string
+    title: string
+    category: string
+  }
 }
 
 // Quiz Analytics Interface
@@ -108,6 +154,7 @@ export interface QuizAnalytics {
     fair: number
     needsImprovement: number
   }
+  dimensionDistribution?: Record<string, { average: number; min: number; max: number }>
   dropoffPoints: Array<{
     questionNumber: number
     dropoffCount: number
@@ -141,45 +188,7 @@ export interface CreateQuizData {
   questions: Array<{
     text: string
     order: number
-    options: Array<{
-      text: string
-      value: number
-      order: number
-    }>
-  }>
-  gradingCriteria: Array<{
-    name: string
-    minScore: number
-    maxScore: number
-    label: string
-    color: string
-    recommendations: string[]
-    areasOfImprovement?: string[]
-    supportNeeded?: string[]
-    proposedCourses: Array<{ id: string; name: string; slug: string }>
-    proposedProducts: Array<{ id: string; name: string; slug: string }>
-    proposedStreaks: Array<{ id: string; name: string; slug: string }>
-    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
-    description?: string
-  }>
-}
-
-// Quiz Update Interface
-export interface UpdateQuizData {
-  quizType?: QuizType
-  redirectAfterAnswer?: RedirectType
-  title?: string
-  subtitle?: string
-  description?: string
-  category?: string
-  estimatedTime?: string
-  difficulty?: QuizDifficulty
-  status?: QuizStatus
-  isPublic?: boolean
-  tags?: string[]
-  questions?: Array<{
-    text: string
-    order: number
+    dimensionId?: string
     options: Array<{
       text: string
       value: number
@@ -200,6 +209,108 @@ export interface UpdateQuizData {
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
     proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
+  }>
+  dimensions?: Array<{
+    name: string
+    shortName: string
+    order: number
+    minScore: number
+    maxScore: number
+    threshold?: number
+    lowLabel?: string
+    highLabel?: string
+  }>
+  complexGradingCriteria?: Array<{
+    name: string
+    label: string
+    color: string
+    recommendations: string[]
+    areasOfImprovement?: string[]
+    supportNeeded?: string[]
+    proposedCourses: Array<{ id: string; name: string; slug: string }>
+    proposedProducts: Array<{ id: string; name: string; slug: string }>
+    proposedStreaks: Array<{ id: string; name: string; slug: string }>
+    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
+    description?: string
+    scoringLogic: {
+      type: 'threshold' | 'highest' | 'topN'
+      dimensions?: Array<{ name: string; value?: string; threshold?: number }>
+      dimension?: string
+      minScore?: number
+      maxScore?: number
+      n?: number
+    }
+  }>
+}
+
+// Quiz Update Interface
+export interface UpdateQuizData {
+  quizType?: QuizType
+  redirectAfterAnswer?: RedirectType
+  title?: string
+  subtitle?: string
+  description?: string
+  category?: string
+  estimatedTime?: string
+  difficulty?: QuizDifficulty
+  status?: QuizStatus
+  isPublic?: boolean
+  tags?: string[]
+  questions?: Array<{
+    text: string
+    order: number
+    dimensionId?: string
+    options: Array<{
+      text: string
+      value: number
+      order: number
+    }>
+  }>
+  gradingCriteria?: Array<{
+    name: string
+    minScore: number
+    maxScore: number
+    label: string
+    color: string
+    recommendations: string[]
+    areasOfImprovement?: string[]
+    supportNeeded?: string[]
+    proposedCourses: Array<{ id: string; name: string; slug: string }>
+    proposedProducts: Array<{ id: string; name: string; slug: string }>
+    proposedStreaks: Array<{ id: string; name: string; slug: string }>
+    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
+    description?: string
+  }>
+  dimensions?: Array<{
+    name: string
+    shortName: string
+    order: number
+    minScore: number
+    maxScore: number
+    threshold?: number
+    lowLabel?: string
+    highLabel?: string
+  }>
+  complexGradingCriteria?: Array<{
+    name: string
+    label: string
+    color: string
+    recommendations: string[]
+    areasOfImprovement?: string[]
+    supportNeeded?: string[]
+    proposedCourses: Array<{ id: string; name: string; slug: string }>
+    proposedProducts: Array<{ id: string; name: string; slug: string }>
+    proposedStreaks: Array<{ id: string; name: string; slug: string }>
+    proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
+    description?: string
+    scoringLogic: {
+      type: 'threshold' | 'highest' | 'topN'
+      dimensions?: Array<{ name: string; value?: string; threshold?: number }>
+      dimension?: string
+      minScore?: number
+      maxScore?: number
+      n?: number
+    }
   }>
 }
 
@@ -244,10 +355,11 @@ export interface QuizSubmission {
 
 // Quiz Result Calculation Interface
 export interface QuizResultCalculation {
-  score: number
-  maxScore: number
-  percentage: number
-  level: QuizResultLevel
+  score?: number
+  maxScore?: number
+  dimensionScores?: Record<string, number>
+  percentage?: number
+  level?: QuizResultLevel
   feedback: string
   recommendations: string[]
   classification: string

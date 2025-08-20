@@ -1,4 +1,4 @@
-import { PrismaClient, QuizResultLevel } from "@prisma/client"
+import { PrismaClient, QuizResultLevel, QuizType } from "@prisma/client"
 import { NotFoundError, AuthorizationError, ValidationError } from "../utils/errors"
 import type {
   Quiz,
@@ -17,16 +17,18 @@ const prisma = new PrismaClient()
 export class QuizService {
   // Quiz Management
   async createQuiz(data: CreateQuizData, createdBy: string): Promise<Quiz> {
-    const { questions, gradingCriteria, ...quizData } = data
+    const { questions, gradingCriteria, complexGradingCriteria, dimensions, quizType, ...quizData } = data
 
     const quiz = await prisma.quiz.create({
       data: {
         ...quizData,
+        quizType: quizType || QuizType.DEFAULT,
         createdBy,
         questions: {
           create: questions.map((question, index) => ({
             text: question.text,
             order: question.order || index,
+            dimensionId: question.dimensionId, // For COMPLEX quizzes
             options: {
               create: question.options.map((option, optionIndex) => ({
                 text: option.text,
@@ -36,36 +38,72 @@ export class QuizService {
             }
           }))
         },
-        gradingCriteria: {
-          create: gradingCriteria.map((criteria) => ({
-            name: criteria.name,
-            minScore: criteria.minScore,
-            maxScore: criteria.maxScore,
-            label: criteria.label,
-            color: criteria.color,
-            recommendations: criteria.recommendations,
-            areasOfImprovement: criteria.areasOfImprovement || [],
-            supportNeeded: criteria.supportNeeded || [],
-            proposedCourses: criteria.proposedCourses,
-            proposedProducts: criteria.proposedProducts,
-            proposedStreaks: criteria.proposedStreaks,
-            proposedBlogPosts: criteria.proposedBlogPosts,
-            description: criteria.description
-          }))
-        }
+        ...(quizType === QuizType.COMPLEX && dimensions
+          ? {
+              dimensions: {
+                create: dimensions.map((dim, index) => ({
+                  name: dim.name,
+                  shortName: dim.shortName,
+                  order: dim.order || index,
+                  minScore: dim.minScore,
+                  maxScore: dim.maxScore,
+                  threshold: dim.threshold,
+                  lowLabel: dim.lowLabel,
+                  highLabel: dim.highLabel
+                }))
+              }
+            }
+          : {}),
+        ...(quizType === QuizType.COMPLEX && complexGradingCriteria
+          ? {
+              complexGradingCriteria: {
+                create: complexGradingCriteria.map((criteria) => ({
+                  name: criteria.name,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses || [],
+                  proposedProducts: criteria.proposedProducts || [],
+                  proposedStreaks: criteria.proposedStreaks || [],
+                  proposedBlogPosts: criteria.proposedBlogPosts || [],
+                  description: criteria.description,
+                  scoringLogic: criteria.scoringLogic
+                }))
+              }
+            }
+          : {
+              gradingCriteria: {
+                create: gradingCriteria?.map((criteria) => ({
+                  name: criteria.name,
+                  minScore: criteria.minScore,
+                  maxScore: criteria.maxScore,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses,
+                  proposedProducts: criteria.proposedProducts,
+                  proposedStreaks: criteria.proposedStreaks,
+                  proposedBlogPosts: criteria.proposedBlogPosts,
+                  description: criteria.description
+                }))
+              }
+            })
       },
       include: {
         questions: {
           include: {
-            options: {
-              orderBy: { order: 'asc' }
-            }
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
           },
           orderBy: { order: 'asc' }
         },
-        gradingCriteria: {
-          orderBy: { minScore: 'asc' }
-        },
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
         createdByUser: {
           select: {
             id: true,
@@ -80,7 +118,6 @@ export class QuizService {
     return this.formatQuiz(quiz)
   }
 
-  // Helper methods will be added here
   private formatQuiz(quiz: any): Quiz {
     return {
       id: quiz.id,
@@ -106,6 +143,18 @@ export class QuizService {
         id: q.id,
         text: q.text,
         order: q.order,
+        dimensionId: q.dimensionId,
+        dimension: q.dimension ? {
+          id: q.dimension.id,
+          name: q.dimension.name,
+          shortName: q.dimension.shortName,
+          order: q.dimension.order,
+          minScore: q.dimension.minScore,
+          maxScore: q.dimension.maxScore,
+          threshold: q.dimension.threshold,
+          lowLabel: q.dimension.lowLabel,
+          highLabel: q.dimension.highLabel
+        } : null,
         options: q.options?.map((o: any) => ({
           id: o.id,
           text: o.text,
@@ -127,6 +176,32 @@ export class QuizService {
         proposedBlogPosts: gc.proposedBlogPosts,
         description: gc.description
       })) || [],
+      complexGradingCriteria: quiz.complexGradingCriteria?.map((cgc: any) => ({
+        id: cgc.id,
+        name: cgc.name,
+        label: cgc.label,
+        color: cgc.color,
+        recommendations: cgc.recommendations,
+        areasOfImprovement: cgc.areasOfImprovement,
+        supportNeeded: cgc.supportNeeded,
+        proposedCourses: cgc.proposedCourses,
+        proposedProducts: cgc.proposedProducts,
+        proposedStreaks: cgc.proposedStreaks,
+        proposedBlogPosts: cgc.proposedBlogPosts,
+        description: cgc.description,
+        scoringLogic: cgc.scoringLogic
+      })) || [],
+      dimensions: quiz.dimensions?.map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        shortName: d.shortName,
+        order: d.order,
+        minScore: d.minScore,
+        maxScore: d.maxScore,
+        threshold: d.threshold,
+        lowLabel: d.lowLabel,
+        highLabel: d.highLabel
+      })) || [],
       createdByUser: quiz.createdByUser
     }
   }
@@ -136,7 +211,6 @@ export class QuizService {
     const skip = (page - 1) * limit
 
     const where: any = {}
-
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -144,31 +218,13 @@ export class QuizService {
         { subtitle: { contains: search, mode: 'insensitive' } }
       ]
     }
-
-    if (category) {
-      where.category = category
-    }
-
-    if (status) {
-      where.status = status
-    }
-
-    if (isPublic !== undefined) {
-      where.isPublic = isPublic
-    }
-
-    if (quizType) {
-      where.quizType = quizType
-    }
-
-    if (createdBy) {
-      where.createdBy = createdBy
-    }
-
+    if (category) where.category = category
+    if (status) where.status = status
+    if (isPublic !== undefined) where.isPublic = isPublic
+    if (quizType) where.quizType = quizType
+    if (createdBy) where.createdBy = createdBy
     if (tags && tags.length > 0) {
-      where.tags = {
-        hasSome: tags
-      }
+      where.tags = { hasSome: tags }
     }
 
     const [quizzes, total] = await Promise.all([
@@ -180,15 +236,14 @@ export class QuizService {
         include: {
           questions: {
             include: {
-              options: {
-                orderBy: { order: 'asc' }
-              }
+              options: { orderBy: { order: 'asc' } },
+              dimension: true
             },
             orderBy: { order: 'asc' }
           },
-          gradingCriteria: {
-            orderBy: { minScore: 'asc' }
-          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
           createdByUser: {
             select: {
               id: true,
@@ -218,15 +273,14 @@ export class QuizService {
       include: {
         questions: {
           include: {
-            options: {
-              orderBy: { order: 'asc' }
-            }
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
           },
           orderBy: { order: 'asc' }
         },
-        gradingCriteria: {
-          orderBy: { minScore: 'asc' }
-        },
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
         createdByUser: {
           select: {
             id: true,
@@ -251,15 +305,14 @@ export class QuizService {
       include: {
         questions: {
           include: {
-            options: {
-              orderBy: { order: 'asc' }
-            }
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
           },
           orderBy: { order: 'asc' }
         },
-        gradingCriteria: {
-          orderBy: { minScore: 'asc' }
-        }
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } }
       }
     })
 
@@ -277,15 +330,14 @@ export class QuizService {
       include: {
         questions: {
           include: {
-            options: {
-              orderBy: { order: 'asc' }
-            }
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
           },
           orderBy: { order: 'asc' }
         },
-        gradingCriteria: {
-          orderBy: { minScore: 'asc' }
-        },
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
         createdByUser: {
           select: {
             id: true,
@@ -301,7 +353,6 @@ export class QuizService {
   }
 
   async updateQuiz(id: string, data: UpdateQuizData, updatedBy: string): Promise<Quiz> {
-    // Check if user has permission to update this quiz
     const existingQuiz = await prisma.quiz.findUnique({
       where: { id },
       select: { createdBy: true }
@@ -315,31 +366,35 @@ export class QuizService {
       throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
     }
 
-    const { questions, gradingCriteria, ...quizData } = data
+    const { questions, gradingCriteria, complexGradingCriteria, dimensions, quizType, ...quizData } = data
 
-    // If questions are being updated, replace all existing ones
     if (questions) {
-      await prisma.quizQuestion.deleteMany({
-        where: { quizId: id }
-      })
+      await prisma.quizQuestion.deleteMany({ where: { quizId: id } })
     }
 
-    // If grading criteria are being updated, replace all existing ones
-    if (gradingCriteria) {
-      await prisma.gradingCriteria.deleteMany({
-        where: { quizId: id }
-      })
+    if (gradingCriteria && quizType !== QuizType.COMPLEX) {
+      await prisma.gradingCriteria.deleteMany({ where: { quizId: id } })
+    }
+
+    if (complexGradingCriteria && quizType === QuizType.COMPLEX) {
+      await prisma.complexGradingCriteria.deleteMany({ where: { quizId: id } })
+    }
+
+    if (dimensions && quizType === QuizType.COMPLEX) {
+      await prisma.quizDimension.deleteMany({ where: { quizId: id } })
     }
 
     const quiz = await prisma.quiz.update({
       where: { id },
       data: {
         ...quizData,
+        quizType: quizType || QuizType.DEFAULT,
         ...(questions && {
           questions: {
             create: questions.map((question, index) => ({
               text: question.text,
               order: question.order || index,
+              dimensionId: question.dimensionId,
               options: {
                 create: question.options.map((option, optionIndex) => ({
                   text: option.text,
@@ -350,36 +405,72 @@ export class QuizService {
             }))
           }
         }),
-        ...(gradingCriteria && {
-          gradingCriteria: {
-            create: gradingCriteria.map((criteria) => ({
-              name: criteria.name,
-              minScore: criteria.minScore,
-              maxScore: criteria.maxScore,
-              label: criteria.label,
-              color: criteria.color,
-              recommendations: criteria.recommendations,
-              proposedCourses: criteria.proposedCourses,
-              proposedProducts: criteria.proposedProducts,
-              proposedStreaks: criteria.proposedStreaks,
-              proposedBlogPosts: criteria.proposedBlogPosts,
-              description: criteria.description
-            }))
-          }
-        })
+        ...(quizType === QuizType.COMPLEX && dimensions
+          ? {
+              dimensions: {
+                create: dimensions.map((dim, index) => ({
+                  name: dim.name,
+                  shortName: dim.shortName,
+                  order: dim.order || index,
+                  minScore: dim.minScore,
+                  maxScore: dim.maxScore,
+                  threshold: dim.threshold,
+                  lowLabel: dim.lowLabel,
+                  highLabel: dim.highLabel
+                }))
+              }
+            }
+          : {}),
+        ...(quizType === QuizType.COMPLEX && complexGradingCriteria
+          ? {
+              complexGradingCriteria: {
+                create: complexGradingCriteria.map((criteria) => ({
+                  name: criteria.name,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses || [],
+                  proposedProducts: criteria.proposedProducts || [],
+                  proposedStreaks: criteria.proposedStreaks || [],
+                  proposedBlogPosts: criteria.proposedBlogPosts || [],
+                  description: criteria.description,
+                  scoringLogic: criteria.scoringLogic
+                }))
+              }
+            }
+          : {
+              gradingCriteria: {
+                create: gradingCriteria?.map((criteria) => ({
+                  name: criteria.name,
+                  minScore: criteria.minScore,
+                  maxScore: criteria.maxScore,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses,
+                  proposedProducts: criteria.proposedProducts,
+                  proposedStreaks: criteria.proposedStreaks,
+                  proposedBlogPosts: criteria.proposedBlogPosts,
+                  description: criteria.description
+                }))
+              }
+            })
       },
       include: {
         questions: {
           include: {
-            options: {
-              orderBy: { order: 'asc' }
-            }
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
           },
           orderBy: { order: 'asc' }
         },
-        gradingCriteria: {
-          orderBy: { minScore: 'asc' }
-        },
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
         createdByUser: {
           select: {
             id: true,
@@ -395,7 +486,6 @@ export class QuizService {
   }
 
   async deleteQuiz(id: string, deletedBy: string): Promise<void> {
-    // Check if user has permission to delete this quiz
     const existingQuiz = await prisma.quiz.findUnique({
       where: { id },
       select: { createdBy: true }
@@ -409,25 +499,24 @@ export class QuizService {
       throw new AuthorizationError("Unauthorized to delete this quiz", "INSUFFICIENT_PERMISSIONS")
     }
 
-    await prisma.quiz.delete({
-      where: { id }
-    })
+    await prisma.quiz.delete({ where: { id } })
   }
 
-  // Quiz Results
   async submitQuiz(submission: QuizSubmission, userId: string): Promise<QuizResult> {
     const { quizId, answers, timeSpent } = submission
 
-    // Get the quiz with questions and grading criteria
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
         questions: {
           include: {
-            options: true
+            options: true,
+            dimension: true
           }
         },
-        gradingCriteria: true
+        gradingCriteria: true,
+        complexGradingCriteria: true,
+        dimensions: true
       }
     })
 
@@ -439,16 +528,15 @@ export class QuizService {
       throw new ValidationError("Quiz is not available", "QUIZ_NOT_AVAILABLE")
     }
 
-    // Calculate the result
     const result = this.calculateQuizResult(quiz, answers)
 
-    // Create the quiz result
     const quizResult = await prisma.quizResult.create({
       data: {
         quizId,
         userId,
         score: result.score,
         maxScore: result.maxScore,
+        dimensionScores: result.dimensionScores,
         percentage: result.percentage,
         level: result.level,
         feedback: result.feedback,
@@ -484,7 +572,6 @@ export class QuizService {
       }
     })
 
-    // Update quiz statistics
     await this.updateQuizStatistics(quizId)
 
     return this.formatQuizResult(quizResult)
@@ -495,27 +582,11 @@ export class QuizService {
     const skip = (page - 1) * limit
 
     const where: any = {}
-
-    if (quizId) {
-      where.quizId = quizId
-    }
-
+    if (quizId) where.quizId = quizId
+    if (userId) where.userId = userId
+    if (level) where.level = level
     if (userId) {
-      where.userId = userId
-    }
-
-    if (level) {
-      where.level = level
-    }
-
-    // Only exclude onboarding quiz results for user-facing queries (when userId is provided)
-    // Admin/management queries should have access to all results including onboarding ones
-    if (userId) {
-      where.quiz = {
-        category: {
-          not: 'ONBOARDING'
-        }
-      }
+      where.quiz = { category: { not: 'ONBOARDING' } }
     }
 
     const [results, total] = await Promise.all([
@@ -584,12 +655,12 @@ export class QuizService {
     return this.getQuizResults({ userId, page, limit })
   }
 
-  // Quiz Analytics
   async getQuizAnalytics(quizId: string): Promise<QuizAnalytics> {
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
-        results: true
+        results: true,
+        dimensions: true
       }
     })
 
@@ -610,21 +681,39 @@ export class QuizService {
         averageScore: 0,
         averageTimeSpent: 0,
         levelDistribution: { excellent: 0, good: 0, fair: 0, needsImprovement: 0 },
+        dimensionDistribution: quiz.dimensions.reduce((acc, dim) => ({ ...acc, [dim.shortName]: { average: 0, min: dim.minScore, max: dim.maxScore } }), {}),
         dropoffPoints: [],
         popularClassifications: [],
         timeDistribution: { fast: 0, normal: 0, slow: 0 }
       }
     }
 
-    const averageScore = results.reduce((sum, result) => sum + result.score, 0) / completedAttempts
+    const averageScore = quiz.quizType === QuizType.DEFAULT && results.length > 0
+      ? results.reduce((sum, result) => sum + (result.score || 0), 0) / completedAttempts
+      : 0
     const averageTimeSpent = results.reduce((sum, result) => sum + result.timeSpent, 0) / completedAttempts
 
-    const levelDistribution = {
-      excellent: results.filter(r => r.level === 'EXCELLENT').length,
-      good: results.filter(r => r.level === 'GOOD').length,
-      fair: results.filter(r => r.level === 'FAIR').length,
-      needsImprovement: results.filter(r => r.level === 'NEEDS_IMPROVEMENT').length
-    }
+    const levelDistribution = quiz.quizType === QuizType.DEFAULT
+      ? {
+          excellent: results.filter(r => r.level === 'EXCELLENT').length,
+          good: results.filter(r => r.level === 'GOOD').length,
+          fair: results.filter(r => r.level === 'FAIR').length,
+          needsImprovement: results.filter(r => r.level === 'NEEDS_IMPROVEMENT').length
+        }
+      : { excellent: 0, good: 0, fair: 0, needsImprovement: 0 }
+
+    const dimensionDistribution = quiz.quizType === QuizType.COMPLEX && quiz.dimensions.length > 0
+      ? quiz.dimensions.reduce((acc, dim) => {
+          const scores = results
+            .map(r => r.dimensionScores?.[dim.shortName] || 0)
+            .filter(score => score !== 0)
+          const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
+          return {
+            ...acc,
+            [dim.shortName]: { average: avg, min: dim.minScore, max: dim.maxScore }
+          }
+        }, {})
+      : {}
 
     const classificationCounts = results.reduce((acc, result) => {
       acc[result.classification] = (acc[result.classification] || 0) + 1
@@ -645,7 +734,6 @@ export class QuizService {
       slow: results.filter(r => r.timeSpent > 15).length
     }
 
-    // Mock dropoff points (in real app, this would be calculated from actual data)
     const dropoffPoints = [
       { questionNumber: 1, dropoffCount: Math.floor(totalAttempts * 0.02), dropoffRate: 2.0 },
       { questionNumber: 5, dropoffCount: Math.floor(totalAttempts * 0.01), dropoffRate: 1.0 },
@@ -659,6 +747,7 @@ export class QuizService {
       averageScore,
       averageTimeSpent,
       levelDistribution,
+      dimensionDistribution,
       dropoffPoints,
       popularClassifications,
       timeDistribution
@@ -671,11 +760,9 @@ export class QuizService {
 
     const where: any = {
       isPublic: true,
-      status: 'ACTIVE',
-      quizType: 'DEFAULT'
+      status: 'ACTIVE'
     }
 
-    // Enhanced search functionality
     if (search && search.trim()) {
       const searchTerm = search.trim()
       where.OR = [
@@ -687,26 +774,18 @@ export class QuizService {
       ]
     }
 
-    // Category filtering with "all" support
     if (category && category !== 'all' && category.trim()) {
       where.category = category.trim()
     }
 
-
-
-    // Status filtering with "all" support
     if (status && status !== 'all' && status.trim()) {
       where.status = status.trim()
     }
 
-    // Tags filtering
     if (tags && tags.length > 0) {
-      where.tags = {
-        hasSome: tags
-      }
+      where.tags = { hasSome: tags }
     }
 
-    // Get available categories for the current filter set
     const categoryQuery = { ...where }
     delete categoryQuery.skip
     delete categoryQuery.take
@@ -721,15 +800,14 @@ export class QuizService {
         include: {
           questions: {
             include: {
-              options: {
-                orderBy: { order: 'asc' }
-              }
+              options: { orderBy: { order: 'asc' } },
+              dimension: true
             },
             orderBy: { order: 'asc' }
           },
-          gradingCriteria: {
-            orderBy: { minScore: 'asc' }
-          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
           createdByUser: {
             select: {
               id: true,
@@ -760,12 +838,15 @@ export class QuizService {
     }
   }
 
-  // Private helper methods
   private calculateQuizResult(quiz: any, answers: any[]): QuizResultCalculation {
+    if (quiz.quizType === QuizType.COMPLEX) {
+      return this.calculateComplexQuizResult(quiz, answers)
+    }
+
+    // DEFAULT quiz scoring (unchanged)
     let totalScore = 0
     let maxScore = 0
 
-    // Calculate score based on answers
     for (const answer of answers) {
       const question = quiz.questions.find((q: any) => q.id === answer.questionId)
       if (question) {
@@ -777,9 +858,8 @@ export class QuizService {
       }
     }
 
-    const percentage = Math.round((totalScore / maxScore) * 100)
+    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0
 
-    // Find the appropriate grading criteria using raw scores, not percentages
     const matchingCriteria = quiz.gradingCriteria.find((criteria: any) =>
       totalScore >= criteria.minScore && totalScore <= criteria.maxScore
     )
@@ -796,7 +876,6 @@ export class QuizService {
     let proposedBlogPosts: Array<{ id: string; title: string; slug: string }> = []
 
     if (matchingCriteria) {
-      // Map criteria name to level
       const nameLower = matchingCriteria.name.toLowerCase()
       if (nameLower.includes('excellent') || nameLower.includes('master')) {
         level = 'EXCELLENT'
@@ -813,14 +892,11 @@ export class QuizService {
       classification = matchingCriteria.label || matchingCriteria.name
       areasOfImprovement = matchingCriteria.areasOfImprovement || []
       supportNeeded = matchingCriteria.supportNeeded || []
-
-      // Include recommended items from grading criteria
       proposedCourses = matchingCriteria.proposedCourses || []
       proposedProducts = matchingCriteria.proposedProducts || []
       proposedStreaks = matchingCriteria.proposedStreaks || []
       proposedBlogPosts = matchingCriteria.proposedBlogPosts || []
     } else {
-      // Fallback to default logic
       if (percentage >= 80) {
         level = 'EXCELLENT'
         feedback = "Excellent! You demonstrate mastery in this area."
@@ -886,6 +962,136 @@ export class QuizService {
     }
   }
 
+  private calculateComplexQuizResult(quiz: any, answers: any[]): QuizResultCalculation {
+    const dimensionScores: Record<string, number> = {}
+    let maxScore = 0
+
+    // Initialize dimension scores
+    for (const dim of quiz.dimensions) {
+      dimensionScores[dim.shortName] = 0
+      const dimQuestions = quiz.questions.filter((q: any) => q.dimensionId === dim.id)
+      maxScore += dimQuestions.length * Math.max(...dimQuestions.flatMap((q: any) => q.options.map((o: any) => o.value)))
+    }
+
+    // Calculate scores per dimension
+    for (const answer of answers) {
+      const question = quiz.questions.find((q: any) => q.id === answer.questionId)
+      if (question && question.dimensionId) {
+        const option = question.options.find((o: any) => o.id === answer.optionId)
+        if (option) {
+          const dimension = quiz.dimensions.find((d: any) => d.id === question.dimensionId)
+          if (dimension) {
+            dimensionScores[dimension.shortName] = (dimensionScores[dimension.shortName] || 0) + option.value
+          }
+        }
+      }
+    }
+
+    // Determine classification based on scoringLogic
+    let classification = ''
+    let feedback = ''
+    let recommendations: string[] = []
+    let areasOfImprovement: string[] = []
+    let supportNeeded: string[] = []
+    let proposedCourses: Array<{ id: string; name: string; slug: string }> = []
+    let proposedProducts: Array<{ id: string; name: string; slug: string }> = []
+    let proposedStreaks: Array<{ id: string; name: string; slug: string }> = []
+    let proposedBlogPosts: Array<{ id: string; title: string; slug: string }> = []
+    let color: string | undefined
+
+    for (const criteria of quiz.complexGradingCriteria) {
+      const { scoringLogic } = criteria
+
+      if (scoringLogic.type === 'threshold') {
+        // e.g., MBTI, Attachment Style
+        const matches = scoringLogic.dimensions.every((dim: any) => {
+          const score = dimensionScores[dim.name]
+          if (typeof score === 'undefined') return false
+          if (dim.value === 'low') return score <= dim.threshold
+          if (dim.value === 'high') return score > dim.threshold
+          return false
+        })
+
+        if (matches) {
+          classification = criteria.name
+          feedback = criteria.description || `You are classified as ${criteria.label}.`
+          recommendations = criteria.recommendations || []
+          areasOfImprovement = criteria.areasOfImprovement || []
+          supportNeeded = criteria.supportNeeded || []
+          proposedCourses = criteria.proposedCourses || []
+          proposedProducts = criteria.proposedProducts || []
+          proposedStreaks = criteria.proposedStreaks || []
+          proposedBlogPosts = criteria.proposedBlogPosts || []
+          color = criteria.color
+          break
+        }
+      } else if (scoringLogic.type === 'highest') {
+        // e.g., Enneagram, Love Languages
+        const targetDimension = scoringLogic.dimension
+        const score = dimensionScores[targetDimension]
+        if (typeof score !== 'undefined' && score >= scoringLogic.minScore && score <= scoringLogic.maxScore) {
+          classification = criteria.name
+          feedback = criteria.description || `You are classified as ${criteria.label}.`
+          recommendations = criteria.recommendations || []
+          areasOfImprovement = criteria.areasOfImprovement || []
+          supportNeeded = criteria.supportNeeded || []
+          proposedCourses = criteria.proposedCourses || []
+          proposedProducts = criteria.proposedProducts || []
+          proposedStreaks = criteria.proposedStreaks || []
+          proposedBlogPosts = criteria.proposedBlogPosts || []
+          color = criteria.color
+          break
+        }
+      } else if (scoringLogic.type === 'topN') {
+        // e.g., RIASEC, Core Values
+        const sortedDimensions = Object.entries(dimensionScores)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, scoringLogic.n)
+          .map(([name]) => name)
+        if (sortedDimensions.join('/') === scoringLogic.dimensions.join('/')) {
+          classification = criteria.name
+          feedback = criteria.description || `You are classified as ${criteria.label}.`
+          recommendations = criteria.recommendations || []
+          areasOfImprovement = criteria.areasOfImprovement || []
+          supportNeeded = criteria.supportNeeded || []
+          proposedCourses = criteria.proposedCourses || []
+          proposedProducts = criteria.proposedProducts || []
+          proposedStreaks = criteria.proposedStreaks || []
+          proposedBlogPosts = criteria.proposedBlogPosts || []
+          color = criteria.color
+          break
+        }
+      }
+    }
+
+    // Fallback if no criteria match
+    if (!classification) {
+      classification = 'Unknown'
+      feedback = 'Unable to determine a specific classification based on your answers.'
+      recommendations = ['Review your answers', 'Consider retaking the quiz']
+      areasOfImprovement = ['Clarity in responses']
+      supportNeeded = ['Additional guidance']
+    }
+
+    return {
+      score: null, // Not used for COMPLEX
+      maxScore: null,
+      dimensionScores,
+      percentage: null,
+      level: null,
+      feedback,
+      recommendations,
+      classification,
+      areasOfImprovement,
+      supportNeeded,
+      proposedCourses,
+      proposedProducts,
+      proposedStreaks,
+      proposedBlogPosts,
+      color
+    }
+  }
+
   private async updateQuizStatistics(quizId: string): Promise<void> {
     const results = await prisma.quizResult.findMany({
       where: { quizId },
@@ -894,7 +1100,7 @@ export class QuizService {
 
     const totalAttempts = await prisma.quizResult.count({ where: { quizId } })
     const completedAttempts = results.length
-    const averageScore = completedAttempts > 0 ? results.reduce((sum, r) => sum + r.score, 0) / completedAttempts : 0
+    const averageScore = completedAttempts > 0 ? results.reduce((sum, r) => sum + (r.score || 0), 0) / completedAttempts : 0
     const averageCompletionTime = completedAttempts > 0 ? results.reduce((sum, r) => sum + r.timeSpent, 0) / completedAttempts : 0
 
     await prisma.quiz.update({
@@ -915,6 +1121,7 @@ export class QuizService {
       userId: result.userId,
       score: result.score,
       maxScore: result.maxScore,
+      dimensionScores: result.dimensionScores,
       percentage: result.percentage,
       level: result.level,
       feedback: result.feedback,

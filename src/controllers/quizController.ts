@@ -13,7 +13,6 @@ import { AuthenticatedRequest } from "../types/auth"
 const quizService = new QuizService()
 
 export class QuizController {
-  // Quiz Management
   async createQuiz(req: AuthenticatedRequest, res: Response) {
     try {
       const validatedData = quizSchema.parse(req.body)
@@ -189,7 +188,6 @@ export class QuizController {
     }
   }
 
-  // Quiz Results
   async submitQuiz(req: AuthenticatedRequest, res: Response) {
     try {
       const validatedData = quizSubmissionSchema.parse(req.body)
@@ -284,7 +282,6 @@ export class QuizController {
     }
   }
 
-  // Quiz Analytics
   async getQuizAnalytics(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
@@ -306,7 +303,6 @@ export class QuizController {
         })
       }
 
-      // Check if user has permission to view analytics (quiz creator or admin)
       const quiz = await quizService.getQuizById(id)
       if (!quiz) {
         return res.status(404).json({ 
@@ -317,7 +313,7 @@ export class QuizController {
       }
 
       if (quiz.createdBy !== userId) {
-        // TODO: Add admin role check here
+        // TODO: Add admin role check
         return res.status(403).json({ 
           success: false,
           error: "AUTHORIZATION_ERROR",
@@ -336,14 +332,10 @@ export class QuizController {
     }
   }
 
-  // Public Quiz Routes
   async getPublicQuizzes(req: Request, res: Response) {
     try {
       const query = (req as any).validatedQuery || quizQuerySchema.parse(req.query)
-      
-      // Use the new enhanced public quizzes method
       const result = await quizService.getPublicQuizzes(query)
-      
       return res.json({
         success: true,
         message: "Public quizzes retrieved successfully",
@@ -354,14 +346,11 @@ export class QuizController {
     }
   }
 
-  // Quiz Categories (for filtering)
   async getQuizCategories(_req: Request, res: Response) {
     try {
-      // This would typically come from a separate categories table
-      // For now, return hardcoded categories based on the frontend data
       const categories = [
         "Personal Development",
-        "Mental Health", 
+        "Mental Health",
         "Life Purpose",
         "Wellness",
         "Career",
@@ -403,7 +392,7 @@ export class QuizController {
         "Productivity",
         "Time Management",
         "Goal Setting",
-        "Habit Building",
+        "Habit Building"
       ]
       return res.json({
         success: true,
@@ -415,7 +404,6 @@ export class QuizController {
     }
   }
 
-  // Quiz Difficulties (for filtering)
   async getQuizDifficulties(_req: Request, res: Response) {
     try {
       const difficulties = [

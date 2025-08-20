@@ -8,11 +8,67 @@ export const quizOptionSchema = z.object({
   order: z.number().int().min(0, "Order must be at least 0")
 })
 
+// Quiz Dimension Schema
+export const quizDimensionSchema = z.object({
+  name: z.string().min(1, "Dimension name is required").max(100, "Dimension name must be less than 100 characters"),
+  shortName: z.string().min(1, "Short name is required").max(50, "Short name must be less than 50 characters"),
+  order: z.number().int().min(0, "Order must be at least 0"),
+  minScore: z.number().int().min(0, "Min score must be at least 0"),
+  maxScore: z.number().int().min(0, "Max score must be at least 0"),
+  threshold: z.number().optional(),
+  lowLabel: z.string().max(50, "Low label must be less than 50 characters").optional(),
+  highLabel: z.string().max(50, "High label must be less than 50 characters").optional()
+})
+
 // Quiz Question Schema
 export const quizQuestionSchema = z.object({
   text: z.string().min(1, "Question text is required").max(1000, "Question text must be less than 1000 characters"),
   order: z.number().int().min(0, "Order must be at least 0"),
+  dimensionId: z.string().optional(), // For COMPLEX quizzes
   options: z.array(quizOptionSchema).min(2, "Question must have at least 2 options").max(6, "Question must have at most 6 options")
+})
+
+// Complex Grading Criteria Schema
+export const complexGradingCriteriaSchema = z.object({
+  name: z.string().min(1, "Criteria name is required").max(100, "Criteria name must be less than 100 characters"),
+  label: z.string().min(1, "Label is required").max(100, "Label must be less than 100 characters"),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Color must be a valid hex color"),
+  recommendations: z.array(z.string().min(1, "Recommendation cannot be empty").max(200, "Recommendation must be less than 200 characters")).min(1, "At least one recommendation is required"),
+  areasOfImprovement: z.array(z.string().min(1, "Area of improvement cannot be empty").max(200, "Area of improvement must be less than 200 characters")).default([]),
+  supportNeeded: z.array(z.string().min(1, "Support needed cannot be empty").max(200, "Support needed must be less than 200 characters")).default([]),
+  proposedCourses: z.array(z.object({
+    id: z.string().min(1, "Course ID is required"),
+    name: z.string().min(1, "Course name is required"),
+    slug: z.string().min(1, "Course slug is required")
+  })).default([]),
+  proposedProducts: z.array(z.object({
+    id: z.string().min(1, "Product ID is required"),
+    name: z.string().min(1, "Product name is required"),
+    slug: z.string().min(1, "Product slug is required")
+  })).default([]),
+  proposedStreaks: z.array(z.object({
+    id: z.string().min(1, "Streak ID is required"),
+    name: z.string().min(1, "Streak name is required"),
+    slug: z.string().min(1, "Streak slug is required")
+  })).default([]),
+  proposedBlogPosts: z.array(z.object({
+    id: z.string().min(1, "Blog post ID is required"),
+    title: z.string().min(1, "Blog post title is required"),
+    slug: z.string().min(1, "Blog post slug is required")
+  })).default([]),
+  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  scoringLogic: z.object({
+    type: z.enum(["threshold", "highest", "topN"]),
+    dimensions: z.array(z.object({
+      name: z.string(),
+      value: z.string().optional(),
+      threshold: z.number().optional()
+    })).optional(),
+    dimension: z.string().optional(),
+    minScore: z.number().optional(),
+    maxScore: z.number().optional(),
+    n: z.number().optional()
+  })
 })
 
 // Grading Criteria Schema
@@ -48,9 +104,10 @@ export const gradingCriteriaSchema = z.object({
   description: z.string().max(500, "Description must be less than 500 characters").optional()
 })
 
+
 // Quiz Creation Schema
 export const quizSchema = z.object({
-  quizType: z.nativeEnum(QuizType),
+  quizType: z.nativeEnum(QuizType).default(QuizType.DEFAULT),
   redirectAfterAnswer: z.nativeEnum(RedirectType),
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
   subtitle: z.string().max(200, "Subtitle must be less than 200 characters").optional(),
@@ -62,13 +119,56 @@ export const quizSchema = z.object({
   isPublic: z.boolean(),
   tags: z.array(z.string().min(1, "Tag cannot be empty").max(50, "Tag must be less than 50 characters")).default([]),
   questions: z.array(quizQuestionSchema).min(1, "Quiz must have at least one question").max(50, "Quiz cannot have more than 50 questions"),
-  gradingCriteria: z.array(gradingCriteriaSchema).min(1, "Quiz must have at least one grading criteria").max(10, "Quiz cannot have more than 10 grading criteria")
+  gradingCriteria: z.array(gradingCriteriaSchema)
+    .min(1, "Quiz must have at least one grading criteria")
+    .max(10, "Quiz cannot have more than 10 grading criteria")
+    .optional(),
+  dimensions: z.array(quizDimensionSchema)
+    .min(1, "COMPLEX quiz must have at least one dimension")
+    .max(10, "COMPLEX quiz cannot have more than 10 dimensions")
+    .optional(),
+  complexGradingCriteria: z.array(complexGradingCriteriaSchema)
+    .min(1, "COMPLEX quiz must have at least one complex grading criteria")
+    .max(20, "COMPLEX quiz cannot have more than 20 complex grading criteria")
+    .optional()
+}).refine(data => {
+  if (data.quizType === QuizType.COMPLEX) {
+    return !!data.dimensions && !!data.complexGradingCriteria && !data.gradingCriteria
+  }
+  return !!data.gradingCriteria && !data.dimensions && !data.complexGradingCriteria
+}, {
+  message: "COMPLEX quizzes require dimensions and complexGradingCriteria, DEFAULT/ONBOARDING quizzes require gradingCriteria",
+  path: ["quizType"]
 })
 
 // Quiz Update Schema
 export const quizUpdateSchema = quizSchema.partial().extend({
-  questions: z.array(quizQuestionSchema).min(1, "Quiz must have at least one question").max(50, "Quiz cannot have more than 50 questions").optional(),
-  gradingCriteria: z.array(gradingCriteriaSchema).min(1, "Quiz must have at least one grading criteria").max(10, "Quiz cannot have more than 10 grading criteria").optional()
+  questions: z.array(quizQuestionSchema)
+    .min(1, "Quiz must have at least one question")
+    .max(50, "Quiz cannot have more than 50 questions")
+    .optional(),
+  gradingCriteria: z.array(gradingCriteriaSchema)
+    .min(1, "Quiz must have at least one grading criteria")
+    .max(10, "Quiz cannot have more than 10 grading criteria")
+    .optional(),
+  dimensions: z.array(quizDimensionSchema)
+    .min(1, "COMPLEX quiz must have at least one dimension")
+    .max(10, "COMPLEX quiz cannot have more than 10 dimensions")
+    .optional(),
+  complexGradingCriteria: z.array(complexGradingCriteriaSchema)
+    .min(1, "COMPLEX quiz must have at least one complex grading criteria")
+    .max(20, "COMPLEX quiz cannot have more than 20 complex grading criteria")
+    .optional()
+}).refine(data => {
+  if (data.quizType === QuizType.COMPLEX) {
+    return (!data.dimensions && !data.complexGradingCriteria && !data.gradingCriteria) || 
+           (data.dimensions && data.complexGradingCriteria && !data.gradingCriteria)
+  }
+  return (!data.dimensions && !data.complexGradingCriteria && !data.gradingCriteria) || 
+         (data.gradingCriteria && !data.dimensions && !data.complexGradingCriteria)
+}, {
+  message: "COMPLEX quizzes require dimensions and complexGradingCriteria, DEFAULT/ONBOARDING quizzes require gradingCriteria",
+  path: ["quizType"]
 })
 
 // Quiz Query Schema
@@ -79,6 +179,7 @@ export const quizQuerySchema = z.object({
   isPublic: z.string().optional(),
   createdBy: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  quizType: z.nativeEnum(QuizType).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt", "title", "totalAttempts", "averageScore"]).default("createdAt"),
@@ -86,18 +187,16 @@ export const quizQuerySchema = z.object({
 }).transform((data) => {
   const transformed: any = { ...data }
   
-  // Handle "all" filter for category and status
-  if (transformed.category === "all") {
-    transformed.category = undefined
-  }
-  if (transformed.status === "all") {
-    transformed.status = undefined
-  }
-  if (transformed.isPublic === "all") {
-    transformed.isPublic = undefined
-  }
+  // Handle "all" filter for category, status, isPublic, and quizType
+  if (transformed.category === "all") transformed.category = undefined
+  if (transformed.status === "all") transformed.status = undefined
+  if (transformed.isPublic === "all") transformed.isPublic = undefined
+  if (transformed.quizType === "all") transformed.quizType = undefined
   
-  // Convert string numbers to actual numbers
+  // Convert string booleans/numbers to actual types
+  if (typeof transformed.isPublic === 'string') {
+    transformed.isPublic = transformed.isPublic === 'true'
+  }
   if (typeof transformed.page === 'string') {
     transformed.page = parseInt(transformed.page, 10)
   }
@@ -108,10 +207,11 @@ export const quizQuerySchema = z.object({
   return transformed
 })
 
-// Public Quiz Query Schema (for public endpoints)
+// Public Quiz Query Schema
 export const publicQuizQuerySchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
+  quizType: z.nativeEnum(QuizType).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "updatedAt", "title", "totalAttempts", "averageScore"]).default("createdAt"),
@@ -119,10 +219,8 @@ export const publicQuizQuerySchema = z.object({
 }).transform((data) => {
   const transformed: any = { ...data }
   
-  // Handle "all" filter for category
-  if (transformed.category === "all") {
-    transformed.category = undefined
-  }
+  if (transformed.category === "all") transformed.category = undefined
+  if (transformed.quizType === "all") transformed.quizType = undefined
   
   return transformed
 })
@@ -190,6 +288,18 @@ export const quizResponseSchema = z.object({
     id: z.string(),
     text: z.string(),
     order: z.number(),
+    dimensionId: z.string().nullable(),
+    dimension: z.object({
+      id: z.string(),
+      name: z.string(),
+      shortName: z.string(),
+      order: z.number(),
+      minScore: z.number(),
+      maxScore: z.number(),
+      threshold: z.number().nullable(),
+      lowLabel: z.string().nullable(),
+      highLabel: z.string().nullable()
+    }).nullable(),
     options: z.array(z.object({
       id: z.string(),
       text: z.string(),
@@ -205,22 +315,51 @@ export const quizResponseSchema = z.object({
     label: z.string(),
     color: z.string(),
     recommendations: z.array(z.string()),
+    areasOfImprovement: z.array(z.string()),
+    supportNeeded: z.array(z.string()),
     proposedCourses: z.array(z.any()),
     proposedProducts: z.array(z.any()),
     proposedStreaks: z.array(z.any()),
     proposedBlogPosts: z.array(z.any()),
     description: z.string().nullable()
-  }))
+  })).optional(),
+  complexGradingCriteria: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    label: z.string(),
+    color: z.string(),
+    recommendations: z.array(z.string()),
+    areasOfImprovement: z.array(z.string()),
+    supportNeeded: z.array(z.string()),
+    proposedCourses: z.array(z.any()),
+    proposedProducts: z.array(z.any()),
+    proposedStreaks: z.array(z.any()),
+    proposedBlogPosts: z.array(z.any()),
+    description: z.string().nullable(),
+    scoringLogic: z.any()
+  })).optional(),
+  dimensions: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    shortName: z.string(),
+    order: z.number(),
+    minScore: z.number(),
+    maxScore: z.number(),
+    threshold: z.number().nullable(),
+    lowLabel: z.string().nullable(),
+    highLabel: z.string().nullable()
+  })).optional()
 })
 
 export const quizResultResponseSchema = z.object({
   id: z.string(),
   quizId: z.string(),
   userId: z.string(),
-  score: z.number(),
-  maxScore: z.number(),
-  percentage: z.number(),
-  level: z.nativeEnum(QuizResultLevel),
+  score: z.number().nullable(),
+  maxScore: z.number().nullable(),
+  dimensionScores: z.record(z.string(), z.number()).optional(),
+  percentage: z.number().nullable(),
+  level: z.nativeEnum(QuizResultLevel).nullable(),
   feedback: z.string(),
   recommendations: z.array(z.string()),
   completedAt: z.date(),
@@ -230,6 +369,10 @@ export const quizResultResponseSchema = z.object({
   areasOfImprovement: z.array(z.string()),
   supportNeeded: z.array(z.string()),
   color: z.string().optional(),
+  proposedCourses: z.array(z.any()),
+  proposedProducts: z.array(z.any()),
+  proposedStreaks: z.array(z.any()),
+  proposedBlogPosts: z.array(z.any()),
   createdAt: z.date(),
   updatedAt: z.date(),
   quiz: z.object({
@@ -257,6 +400,11 @@ export const quizAnalyticsResponseSchema = z.object({
     fair: z.number(),
     needsImprovement: z.number()
   }),
+  dimensionDistribution: z.record(z.string(), z.object({
+    average: z.number(),
+    min: z.number(),
+    max: z.number()
+  })).optional(),
   dropoffPoints: z.array(z.object({
     questionNumber: z.number(),
     dropoffCount: z.number(),
