@@ -28,12 +28,17 @@ class FileService {
       // Generate a unique filename if not provided
       const filename = fileData.filename || this.generateUniqueFilename(fileData.originalName, fileData.alt);
 
+      const fileDataToCreate = {
+        ...fileData,
+        filename,
+      };
+      
+      if (uploadedBy) {
+        (fileDataToCreate as any).uploadedBy = uploadedBy;
+      }
+
       const file = await this.prisma.file.create({
-        data: {
-          ...fileData,
-          filename,
-          uploadedBy,
-        },
+        data: fileDataToCreate,
         include: {
           uploadedByUser: {
             select: {

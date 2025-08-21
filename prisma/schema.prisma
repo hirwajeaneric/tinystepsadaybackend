@@ -44,6 +44,7 @@ model User {
   blogLikes         BlogLike[]      @relation("LikeUser")
   createdQuizzes    Quiz[]          @relation("QuizCreator")
   quizResults       QuizResult[]    @relation("QuizResults")
+  uploadedFiles     File[]          @relation("UploadedFiles")
   @@map("users")
 }
 
@@ -459,6 +460,23 @@ enum SubscribeType {
   BOOK_PUBLISH
 }
 
+// Newsletter Subscription System
+model Subscriber {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  email          String         @unique
+  subscribingTo  SubscribeType
+  itemName       String?        // Optional item name (e.g., book title, course name)
+  itemId         String?        // Optional item ID
+  isActive       Boolean        @default(true)
+  unsubscribedAt DateTime?
+  unsubscribeReason UnsubscribeReason?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  @@map("subscribers")
+}
+
 enum UnsubscribeReason {
   TOO_MANY_EMAILS
   NOT_RELEVANT
@@ -466,6 +484,30 @@ enum UnsubscribeReason {
   PRIVACY_CONCERNS
   NO_LONGER_INTERESTED
   OTHER
+}
+
+// File Management System
+model File {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  alt         String?
+  type        FileType
+  caption     String?
+  width       Int?
+  height      Int?
+  duration    Int?
+  isPublic    Boolean  @default(true)
+  tags        String[] @default([])
+  metadata    Json?
+  uploadedBy  String?  @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uploadedByUser User? @relation("UploadedFiles", fields: [uploadedBy], references: [id])
+  @@map("files")
 }
 
 enum FileType {

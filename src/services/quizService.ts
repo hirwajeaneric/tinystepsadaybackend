@@ -705,7 +705,10 @@ export class QuizService {
     const dimensionDistribution = quiz.quizType === QuizType.COMPLEX && quiz.dimensions.length > 0
       ? quiz.dimensions.reduce((acc, dim) => {
           const scores = results
-            .map(r => r.dimensionScores?.[dim.shortName] || 0)
+            .map(r => {
+              const dimensionScores = r.dimensionScores as Record<string, number> | null;
+              return dimensionScores?.[dim.shortName] || 0;
+            })
             .filter(score => score !== 0)
           const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
           return {
@@ -1074,11 +1077,11 @@ export class QuizService {
     }
 
     return {
-      score: null, // Not used for COMPLEX
-      maxScore: null,
+      score: undefined, // Not used for COMPLEX
+      maxScore: undefined,
       dimensionScores,
-      percentage: null,
-      level: null,
+      percentage: undefined,
+      level: undefined,
       feedback,
       recommendations,
       classification,

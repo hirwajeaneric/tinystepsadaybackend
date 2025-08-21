@@ -31,7 +31,8 @@ class SubscriberService {
             data: {
               isActive: true,
               subscribingTo: data.subscribingTo,
-              item: data.item,
+              itemName: data.item?.name,
+              itemId: data.item?.id,
               unsubscribedAt: null,
               ipAddress,
               userAgent,
@@ -45,7 +46,8 @@ class SubscriberService {
           where: { id: existingSubscriber.id },
           data: {
             subscribingTo: data.subscribingTo,
-            item: data.item,
+            itemName: data.item?.name,
+            itemId: data.item?.id,
             ipAddress,
             userAgent,
             updatedAt: new Date()
@@ -58,7 +60,8 @@ class SubscriberService {
         data: {
           email: data.email,
           subscribingTo: data.subscribingTo,
-          item: data.item,
+          itemName: data.item?.name,
+          itemId: data.item?.id,
           ipAddress,
           userAgent
         }
