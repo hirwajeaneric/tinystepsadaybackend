@@ -120,24 +120,24 @@ export const quizSchema = z.object({
   tags: z.array(z.string().min(1, "Tag cannot be empty").max(50, "Tag must be less than 50 characters")).default([]),
   questions: z.array(quizQuestionSchema).min(1, "Quiz must have at least one question").max(50, "Quiz cannot have more than 50 questions"),
   gradingCriteria: z.array(gradingCriteriaSchema)
-    .min(1, "Quiz must have at least one grading criteria")
     .max(10, "Quiz cannot have more than 10 grading criteria")
     .optional(),
   dimensions: z.array(quizDimensionSchema)
-    .min(1, "COMPLEX quiz must have at least one dimension")
     .max(10, "COMPLEX quiz cannot have more than 10 dimensions")
     .optional(),
   complexGradingCriteria: z.array(complexGradingCriteriaSchema)
-    .min(1, "COMPLEX quiz must have at least one complex grading criteria")
-    .max(20, "COMPLEX quiz cannot have more than 20 complex grading criteria")
+    .max(20, "Quiz cannot have more than 20 complex grading criteria")
     .optional()
 }).refine(data => {
   if (data.quizType === QuizType.COMPLEX) {
-    return !!data.dimensions && !!data.complexGradingCriteria && !data.gradingCriteria
+    // COMPLEX quizzes must have dimensions and complexGradingCriteria, but NOT regular gradingCriteria
+    return !!data.dimensions && !!data.complexGradingCriteria && (!data.gradingCriteria || data.gradingCriteria.length === 0)
+  } else {
+    // DEFAULT/ONBOARDING quizzes must have regular gradingCriteria, but NOT dimensions or complexGradingCriteria
+    return !!data.gradingCriteria && data.gradingCriteria.length > 0 && (!data.dimensions || data.dimensions.length === 0) && (!data.complexGradingCriteria || data.complexGradingCriteria.length === 0)
   }
-  return !!data.gradingCriteria && !data.dimensions && !data.complexGradingCriteria
 }, {
-  message: "COMPLEX quizzes require dimensions and complexGradingCriteria, DEFAULT/ONBOARDING quizzes require gradingCriteria",
+  message: "COMPLEX quizzes require dimensions and complexGradingCriteria (no regular gradingCriteria). DEFAULT/ONBOARDING quizzes require regular gradingCriteria (no dimensions or complexGradingCriteria).",
   path: ["quizType"]
 })
 
@@ -148,26 +148,29 @@ export const quizUpdateSchema = quizSchema.partial().extend({
     .max(50, "Quiz cannot have more than 50 questions")
     .optional(),
   gradingCriteria: z.array(gradingCriteriaSchema)
-    .min(1, "Quiz must have at least one grading criteria")
+
     .max(10, "Quiz cannot have more than 10 grading criteria")
     .optional(),
   dimensions: z.array(quizDimensionSchema)
-    .min(1, "COMPLEX quiz must have at least one dimension")
+
     .max(10, "COMPLEX quiz cannot have more than 10 dimensions")
     .optional(),
   complexGradingCriteria: z.array(complexGradingCriteriaSchema)
-    .min(1, "COMPLEX quiz must have at least one complex grading criteria")
+
     .max(20, "COMPLEX quiz cannot have more than 20 complex grading criteria")
     .optional()
 }).refine(data => {
   if (data.quizType === QuizType.COMPLEX) {
+    // COMPLEX quizzes must have dimensions and complexGradingCriteria, but NOT regular gradingCriteria
     return (!data.dimensions && !data.complexGradingCriteria && !data.gradingCriteria) || 
-           (data.dimensions && data.complexGradingCriteria && !data.gradingCriteria)
+           (data.dimensions && data.complexGradingCriteria && (!data.gradingCriteria || data.gradingCriteria.length === 0))
+  } else {
+    // DEFAULT/ONBOARDING quizzes must have regular gradingCriteria, but NOT dimensions or complexGradingCriteria
+    return (!data.dimensions && !data.complexGradingCriteria && !data.gradingCriteria) || 
+           (data.gradingCriteria && data.gradingCriteria.length > 0 && (!data.dimensions || data.dimensions.length === 0) && (!data.complexGradingCriteria || data.complexGradingCriteria.length === 0))
   }
-  return (!data.dimensions && !data.complexGradingCriteria && !data.gradingCriteria) || 
-         (data.gradingCriteria && !data.dimensions && !data.complexGradingCriteria)
 }, {
-  message: "COMPLEX quizzes require dimensions and complexGradingCriteria, DEFAULT/ONBOARDING quizzes require gradingCriteria",
+  message: "COMPLEX quizzes require dimensions and complexGradingCriteria (no regular gradingCriteria). DEFAULT/ONBOARDING quizzes require regular gradingCriteria (no dimensions or complexGradingCriteria).",
   path: ["quizType"]
 })
 

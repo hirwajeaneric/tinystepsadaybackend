@@ -1,0 +1,2081 @@
+{
+    "quizType": "COMPLEX",
+    "redirectAfterAnswer": "RESULTS",
+    "title": "Myers-Briggs Personality Type Indicator (MBTI) Assessment",
+    "subtitle": "Discover your unique personality type and gain insights into your preferences and behaviors",
+    "description": "This comprehensive MBTI assessment evaluates your preferences across four key dimensions: Extraversion vs. Introversion (E/I), Sensing vs. Intuition (S/N), Thinking vs. Feeling (T/F), and Judging vs. Perceiving (J/P). Based on Carl Jung's theory of psychological types, developed by Isabel Briggs Myers and Katharine Cook Briggs, it assigns one of 16 personality types. The quiz consists of 32 questions (8 per dimension) with a 4-point scale. Results are determined by summing scores per dimension (range 8-32, threshold at 20) and combining preferences. Note: This is for self-discovery and not a professional diagnosis. For accurate results, answer honestly based on your typical behavior.",
+    "category": "Personal Growth",
+    "estimatedTime": "10-15 minutes",
+    "difficulty": "BEGINNER",
+    "status": "ACTIVE",
+    "isPublic": true,
+    "tags": [
+        "mbti",
+        "personality",
+        "self-assessment",
+        "psychology",
+        "personal development"
+    ],
+    "dimensions": [
+        {
+            "name": "Extraversion/Introversion",
+            "shortName": "E/I",
+            "order": 0,
+            "minScore": 8,
+            "maxScore": 32,
+            "threshold": 20,
+            "lowLabel": "I",
+            "highLabel": "E"
+        },
+        {
+            "name": "Sensing/Intuition",
+            "shortName": "S/N",
+            "order": 1,
+            "minScore": 8,
+            "maxScore": 32,
+            "threshold": 20,
+            "lowLabel": "N",
+            "highLabel": "S"
+        },
+        {
+            "name": "Thinking/Feeling",
+            "shortName": "T/F",
+            "order": 2,
+            "minScore": 8,
+            "maxScore": 32,
+            "threshold": 20,
+            "lowLabel": "F",
+            "highLabel": "T"
+        },
+        {
+            "name": "Judging/Perceiving",
+            "shortName": "J/P",
+            "order": 3,
+            "minScore": 8,
+            "maxScore": 32,
+            "threshold": 20,
+            "lowLabel": "P",
+            "highLabel": "J"
+        }
+    ],
+    "questions": [
+        {
+            "text": "I am energized by spending time with other people.",
+            "order": 0,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prefer to socialize in large groups rather than one-on-one.",
+            "order": 1,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I enjoy being the center of attention.",
+            "order": 2,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I am comfortable initiating conversations with strangers.",
+            "order": 3,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prefer lively environments over quiet ones.",
+            "order": 4,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I feel drained after prolonged solitude.",
+            "order": 5,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I thrive in team-based activities.",
+            "order": 6,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I seek out social events regularly.",
+            "order": 7,
+            "dimension": "E/I",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },   
+        {
+            "text": "I focus on facts and details rather than possibilities.",
+            "order": 8,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prefer practical solutions over innovative ones.",
+            "order": 9,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I trust my five senses more than my intuition.",
+            "order": 10,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I like step-by-step instructions when learning new things.",
+            "order": 11,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I am more interested in what is happening now than what might happen in the future.",
+            "order": 12,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I value hands-on experience over theoretical knowledge.",
+            "order": 13,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prefer concrete examples to abstract concepts.",
+            "order": 14,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I describe myself as realistic and down-to-earth.",
+            "order": 15,
+            "dimension": "S/N",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },  
+        {
+            "text": "I make decisions based on logic and objective analysis.",
+            "order": 16,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prioritize truth and fairness over maintaining harmony.",
+            "order": 17,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I am more objective than subjective when evaluating situations.",
+            "order": 18,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I analyze pros and cons systematically before deciding.",
+            "order": 19,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I am firm in my principles, even if it upsets others.",
+            "order": 20,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I value justice and consistency over compassion in conflicts.",
+            "order": 21,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I remain detached and rational when making tough choices.",
+            "order": 22,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I focus more on tasks and outcomes than on people's feelings.",
+            "order": 23,
+            "dimension": "T/F",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I like to have a detailed plan and stick to it rigidly.",
+            "order": 24,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I prefer structure, organization, and clear routines in my life.",
+            "order": 25,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I make decisions quickly to achieve closure.",
+            "order": 26,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I like to complete one task fully before starting another.",
+            "order": 27,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I am punctual and dislike last-minute changes.",
+            "order": 28,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I feel uncomfortable with surprises and prefer predictability.",
+            "order": 29,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I set clear goals, deadlines, and schedules for myself.",
+            "order": 30,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "text": "I dislike loose ends and prefer everything resolved promptly.",
+            "order": 31,
+            "dimension": "J/P",
+            "options": [
+                {
+                    "text": "Strongly Disagree",
+                    "value": 1,
+                    "order": 0
+                },
+                {
+                    "text": "Disagree",
+                    "value": 2,
+                    "order": 1
+                },
+                {
+                    "text": "Agree",
+                    "value": 3,
+                    "order": 2
+                },
+                {
+                    "text": "Strongly Agree",
+                    "value": 4,
+                    "order": 3
+                }
+            ]
+        }
+    ],
+    "complexGradingCriteria": [
+        {
+            "name": "ISTJ",
+            "label": "The Inspector",
+            "color": "#3b82f6",
+            "recommendations": [
+                "Focus on organized routines",
+                "Pursue careers in law or accounting",
+                "Build habits for work-life balance"
+            ],
+            "areasOfImprovement": [
+                "Flexibility",
+                "Openness to new ideas"
+            ],
+            "supportNeeded": [
+                "Organizational tools",
+                "Stress management resources"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-1",
+                    "name": "Project Management Fundamentals",
+                    "slug": "project-management-fundamentals"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-1",
+                    "name": "Daily Planner Notebook",
+                    "slug": "daily-planner-notebook"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-1",
+                    "name": "Daily Organization Streak",
+                    "slug": "daily-organization-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-1",
+                    "title": "The Power of Structure for ISTJs",
+                    "slug": "power-of-structure-istj"
+                }
+            ],
+            "description": "Practical, fact-minded, responsible, and reliable. ISTJs value tradition and order, excelling in roles requiring detail and structure.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ISFJ",
+            "label": "The Protector",
+            "color": "#8b5cf6",
+            "recommendations": [
+                "Embrace your empathy in relationships",
+                "Set boundaries to avoid burnout",
+                "Explore volunteering or caregiving roles"
+            ],
+            "areasOfImprovement": [
+                "Assertiveness",
+                "Adaptability to change"
+            ],
+            "supportNeeded": [
+                "Boundary-setting guides",
+                "Self-care routines"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-2",
+                    "name": "Emotional Intelligence for Caregivers",
+                    "slug": "emotional-intelligence-caregivers"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-2",
+                    "name": "Self-Care Journal",
+                    "slug": "self-care-journal"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-2",
+                    "name": "Daily Self-Care Streak",
+                    "slug": "daily-self-care-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-2",
+                    "title": "Balancing Caregiving as an ISFJ",
+                    "slug": "balancing-caregiving-isfj"
+                }
+            ],
+            "description": "Conscientious, caring, and dedicated to helping others. ISFJs are loyal and supportive, often thriving in nurturing professions.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "INFJ",
+            "label": "The Advocate",
+            "color": "#d946ef",
+            "recommendations": [
+                "Channel vision into long-term goals",
+                "Practice self-care amid idealism",
+                "Consider writing or therapy careers"
+            ],
+            "areasOfImprovement": [
+                "Practicality",
+                "Delegation"
+            ],
+            "supportNeeded": [
+                "Goal-setting tools",
+                "Support groups for idealists"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-3",
+                    "name": "Visionary Leadership",
+                    "slug": "visionary-leadership"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-3",
+                    "name": "Goal Planning Workbook",
+                    "slug": "goal-planning-workbook"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-3",
+                    "name": "Daily Visioning Streak",
+                    "slug": "daily-visioning-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-3",
+                    "title": "Harnessing Idealism as an INFJ",
+                    "slug": "harnessing-idealism-infj"
+                }
+            ],
+            "description": "Insightful, idealistic, and driven by values. INFJs seek meaning and connection, often in creative or counseling fields.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "INTJ",
+            "label": "The Architect",
+            "color": "#f43f5e",
+            "recommendations": [
+                "Leverage planning skills in leadership",
+                "Avoid isolation by seeking feedback",
+                "Pursue tech or strategy roles"
+            ],
+            "areasOfImprovement": [
+                "Team collaboration",
+                "Emotional expression"
+            ],
+            "supportNeeded": [
+                "Collaboration platforms",
+                "Emotional intelligence training"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-4",
+                    "name": "Strategic Planning",
+                    "slug": "strategic-planning"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-4",
+                    "name": "Strategy Toolkit",
+                    "slug": "strategy-toolkit"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-4",
+                    "name": "Daily Strategy Streak",
+                    "slug": "daily-strategy-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-4",
+                    "title": "Strategic Success for INTJs",
+                    "slug": "strategic-success-intj"
+                }
+            ],
+            "description": "Strategic, innovative, and independent thinkers. INTJs plan meticulously and excel in complex problem-solving.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ISTP",
+            "label": "The Crafter",
+            "color": "#3b82f6",
+            "recommendations": [
+                "Experiment with new tools/hobbies",
+                "Balance independence with teamwork",
+                "Consider engineering or mechanics"
+            ],
+            "areasOfImprovement": [
+                "Long-term commitment",
+                "Social engagement"
+            ],
+            "supportNeeded": [
+                "Hands-on learning resources",
+                "Networking events"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-5",
+                    "name": "Practical Engineering",
+                    "slug": "practical-engineering"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-5",
+                    "name": "Tool Set",
+                    "slug": "tool-set"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-5",
+                    "name": "Daily Experiment Streak",
+                    "slug": "daily-experiment-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-5",
+                    "title": "Hands-On Innovation for ISTPs",
+                    "slug": "hands-on-innovation-istp"
+                }
+            ],
+            "description": "Bold, practical, and analytical explorers. ISTPs enjoy hands-on work and troubleshooting.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ISFP",
+            "label": "The Artist",
+            "color": "#8b5cf6",
+            "recommendations": [
+                "Express creativity through art/music",
+                "Avoid high-pressure environments",
+                "Explore design or environmental work"
+            ],
+            "areasOfImprovement": [
+                "Assertiveness",
+                "Planning"
+            ],
+            "supportNeeded": [
+                "Creative outlets",
+                "Career exploration tools"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-6",
+                    "name": "Creative Arts",
+                    "slug": "creative-arts"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-6",
+                    "name": "Art Supplies Kit",
+                    "slug": "art-supplies-kit"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-6",
+                    "name": "Daily Creativity Streak",
+                    "slug": "daily-creativity-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-6",
+                    "title": "Artistic Expression for ISFPs",
+                    "slug": "artistic-expression-isfp"
+                }
+            ],
+            "description": "Sensitive, kind, and artistic individuals. ISFPs live in the moment and value harmony.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "INFP",
+            "label": "The Mediator",
+            "color": "#d946ef",
+            "recommendations": [
+                "Pursue passion projects",
+                "Journal for self-reflection",
+                "Consider counseling or writing careers"
+            ],
+            "areasOfImprovement": [
+                "Practicality",
+                "Decision-making"
+            ],
+            "supportNeeded": [
+                "Journaling tools",
+                "Career counseling"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-7",
+                    "name": "Creative Writing Workshop",
+                    "slug": "creative-writing-workshop"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-7",
+                    "name": "Reflection Journal",
+                    "slug": "reflection-journal"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-7",
+                    "name": "Daily Journaling Streak",
+                    "slug": "daily-journaling-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-7",
+                    "title": "Self-Reflection for INFPs",
+                    "slug": "self-reflection-infp"
+                }
+            ],
+            "description": "Poetic, altruistic, and guided by principles. INFPs seek authenticity and help others.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "INTP",
+            "label": "The Thinker",
+            "color": "#f43f5e",
+            "recommendations": [
+                "Dive into research/puzzles",
+                "Share ideas to combat isolation",
+                "Excel in science or philosophy"
+            ],
+            "areasOfImprovement": [
+                "Practical application",
+                "Social skills"
+            ],
+            "supportNeeded": [
+                "Research tools",
+                "Social networking apps"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-8",
+                    "name": "Advanced Logic and Reasoning",
+                    "slug": "advanced-logic-reasoning"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-8",
+                    "name": "Puzzle Set",
+                    "slug": "puzzle-set"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-8",
+                    "name": "Daily Puzzle Streak",
+                    "slug": "daily-puzzle-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-8",
+                    "title": "Intellectual Pursuit for INTPs",
+                    "slug": "intellectual-pursuit-intp"
+                }
+            ],
+            "description": "Innovative, logical, and curious intellectuals. INTPs love theories and debate.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ESTP",
+            "label": "The Persuader",
+            "color": "#3b82f6",
+            "recommendations": [
+                "Embrace risks in sports/business",
+                "Practice patience",
+                "Pursue sales or emergency services"
+            ],
+            "areasOfImprovement": [
+                "Long-term planning",
+                "Emotional depth"
+            ],
+            "supportNeeded": [
+                "Adventure gear",
+                "Patience building exercises"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-9",
+                    "name": "Risk Management in Business",
+                    "slug": "risk-management-business"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-9",
+                    "name": "Adventure Kit",
+                    "slug": "adventure-kit"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-9",
+                    "name": "Daily Adventure Streak",
+                    "slug": "daily-adventure-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-9",
+                    "title": "Risk-Taking for ESTPs",
+                    "slug": "risk-taking-estp"
+                }
+            ],
+            "description": "Energetic, action-oriented, and adaptable. ESTPs thrive on excitement and quick thinking.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ESFP",
+            "label": "The Performer",
+            "color": "#8b5cf6",
+            "recommendations": [
+                "Leverage charisma in social roles",
+                "Set goals for focus",
+                "Consider entertainment or hospitality"
+            ],
+            "areasOfImprovement": [
+                "Discipline",
+                "Long-term commitment"
+            ],
+            "supportNeeded": [
+                "Goal-tracking apps",
+                "Focus techniques"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-10",
+                    "name": "Public Speaking Mastery",
+                    "slug": "public-speaking-mastery"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-10",
+                    "name": "Performance Coaching Kit",
+                    "slug": "performance-coaching-kit"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-10",
+                    "name": "Daily Goal Streak",
+                    "slug": "daily-goal-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-10",
+                    "title": "Charisma Development for ESFPs",
+                    "slug": "charisma-development-esfp"
+                }
+            ],
+            "description": "Outgoing, fun-loving, and spontaneous. ESFPs bring joy and connect easily.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ENFP",
+            "label": "The Champion",
+            "color": "#d946ef",
+            "recommendations": [
+                "Brainstorm ideas freely",
+                "Commit to follow-through",
+                "Excel in marketing or teaching"
+            ],
+            "areasOfImprovement": [
+                "Focus",
+                "Organization"
+            ],
+            "supportNeeded": [
+                "Idea management tools",
+                "Accountability partners"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-11",
+                    "name": "Innovative Thinking",
+                    "slug": "innovative-thinking"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-11",
+                    "name": "Idea Notebook",
+                    "slug": "idea-notebook"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-11",
+                    "name": "Daily Brainstorm Streak",
+                    "slug": "daily-brainstorm-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-11",
+                    "title": "Idea Generation for ENFPs",
+                    "slug": "idea-generation-enfp"
+                }
+            ],
+            "description": "Enthusiastic, creative, and people-oriented. ENFPs inspire and innovate.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ENTP",
+            "label": "The Debater",
+            "color": "#f43f5e",
+            "recommendations": [
+                "Debate for growth",
+                "Finish projects",
+                "Pursue entrepreneurship or law"
+            ],
+            "areasOfImprovement": [
+                "Consistency",
+                "Attention to detail"
+            ],
+            "supportNeeded": [
+                "Project management software",
+                "Debate clubs"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-12",
+                    "name": "Entrepreneurship and Innovation",
+                    "slug": "entrepreneurship-innovation"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-12",
+                    "name": "Debate Toolkit",
+                    "slug": "debate-toolkit"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-12",
+                    "name": "Daily Debate Streak",
+                    "slug": "daily-debate-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-12",
+                    "title": "Debating Skills for ENTPs",
+                    "slug": "debating-skills-entp"
+                }
+            ],
+            "description": "Clever, visionary, and argumentative. ENTPs challenge norms and ideate.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "low",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ESTJ",
+            "label": "The Director",
+            "color": "#3b82f6",
+            "recommendations": [
+                "Lead teams effectively",
+                "Delegate to avoid overload",
+                "Consider management or military"
+            ],
+            "areasOfImprovement": [
+                "Flexibility",
+                "Emotional awareness"
+            ],
+            "supportNeeded": [
+                "Team management tools",
+                "Emotional intelligence courses"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-13",
+                    "name": "Team Management",
+                    "slug": "team-management"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-13",
+                    "name": "Leadership Organizer",
+                    "slug": "leadership-organizer"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-13",
+                    "name": "Daily Leadership Streak",
+                    "slug": "daily-leadership-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-13",
+                    "title": "Effective Leadership for ESTJs",
+                    "slug": "effective-leadership-estj"
+                }
+            ],
+            "description": "Efficient, organized, and decisive leaders. ESTJs enforce standards and achieve goals.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ESFJ",
+            "label": "The Caregiver",
+            "color": "#8b5cf6",
+            "recommendations": [
+                "Build communities",
+                "Practice self-assertion",
+                "Excel in education or healthcare"
+            ],
+            "areasOfImprovement": [
+                "Independence",
+                "Conflict resolution"
+            ],
+            "supportNeeded": [
+                "Community building resources",
+                "Assertiveness training"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-14",
+                    "name": "Community Leadership",
+                    "slug": "community-leadership"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-14",
+                    "name": "Caregiving Guide",
+                    "slug": "caregiving-guide"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-14",
+                    "name": "Daily Community Streak",
+                    "slug": "daily-community-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-14",
+                    "title": "Building Communities as an ESFJ",
+                    "slug": "building-communities-esfj"
+                }
+            ],
+            "description": "Warm, cooperative, and sociable. ESFJs foster harmony and support.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ENFJ",
+            "label": "The Giver",
+            "color": "#d946ef",
+            "recommendations": [
+                "Mentor and lead",
+                "Recharge alone",
+                "Pursue coaching or politics"
+            ],
+            "areasOfImprovement": [
+                "Personal boundaries",
+                "Objectivity"
+            ],
+            "supportNeeded": [
+                "Mentoring resources",
+                "Self-care practices"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-15",
+                    "name": "Coaching and Mentoring",
+                    "slug": "coaching-mentoring"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-15",
+                    "name": "Mentor's Handbook",
+                    "slug": "mentors-handbook"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-15",
+                    "name": "Daily Mentoring Streak",
+                    "slug": "daily-mentoring-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-15",
+                    "title": "Mentoring as an ENFJ",
+                    "slug": "mentoring-enfj"
+                }
+            ],
+            "description": "Charismatic, empathetic, and inspirational. ENFJs motivate and guide others.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ENTJ",
+            "label": "The Commander",
+            "color": "#f43f5e",
+            "recommendations": [
+                "Set visionary goals",
+                "Empathize more",
+                "Excel in executive or consulting roles"
+            ],
+            "areasOfImprovement": [
+                "Patience",
+                "Team sensitivity"
+            ],
+            "supportNeeded": [
+                "Leadership development",
+                "Empathy training"
+            ],
+            "proposedCourses": [
+                {
+                    "id": "course-16",
+                    "name": "Advanced Leadership",
+                    "slug": "advanced-leadership"
+                }
+            ],
+            "proposedProducts": [
+                {
+                    "id": "product-16",
+                    "name": "Visionary Planner",
+                    "slug": "visionary-planner"
+                }
+            ],
+            "proposedStreaks": [
+                {
+                    "id": "streak-16",
+                    "name": "Daily Vision Streak",
+                    "slug": "daily-vision-streak"
+                }
+            ],
+            "proposedBlogPosts": [
+                {
+                    "id": "blog-16",
+                    "title": "Commanding Success for ENTJs",
+                    "slug": "commanding-success-entj"
+                }
+            ],
+            "description": "Bold, strategic, and ambitious leaders. ENTJs drive change and efficiency.",
+            "scoringLogic": {
+                "type": "threshold",
+                "dimensions": [
+                    {
+                        "name": "E/I",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "S/N",
+                        "value": "low",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "T/F",
+                        "value": "high",
+                        "threshold": 20
+                    },
+                    {
+                        "name": "J/P",
+                        "value": "high",
+                        "threshold": 20
+                    }
+                ]
+            }
+        }
+    ]
+}
