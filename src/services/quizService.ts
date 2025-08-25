@@ -78,12 +78,13 @@ export class QuizService {
 
       // Step 3: Add questions with proper dimension references
       const questionsWithDimensions = questions.map((question, index) => {
-        // Find the dimension by order if dimensionId is not provided
+        // Only use order-based mapping if dimensionId is explicitly undefined/null
         let dimensionId = question.dimensionId
-        if (!dimensionId && question.order !== undefined) {
+        if (dimensionId === undefined || dimensionId === null) {
+          // Fall back to order-based mapping only when no dimensionId provided
           dimensionId = dimensionMap.get(question.order)
         }
-        
+
         return {
           text: question.text,
           order: question.order || index,
@@ -518,12 +519,13 @@ export class QuizService {
 
       // Step 3: Add questions with proper dimension references
       const questionsWithDimensions = questions.map((question, index) => {
-        // Find the dimension by order if dimensionId is not provided
+        // Only use order-based mapping if dimensionId is explicitly undefined/null
         let dimensionId = question.dimensionId
-        if (!dimensionId && question.order !== undefined) {
+        if (dimensionId === undefined || dimensionId === null) {
+          // Fall back to order-based mapping only when no dimensionId provided
           dimensionId = dimensionMap.get(question.order)
         }
-        
+
         return {
           text: question.text,
           order: question.order || index,
@@ -593,58 +595,58 @@ export class QuizService {
           }),
           ...(quizType === QuizType.COMPLEX && dimensions
             ? {
-                dimensions: {
-                  create: dimensions.map((dim, index) => ({
-                    name: dim.name,
-                    shortName: dim.shortName,
-                    order: dim.order || index,
-                    minScore: dim.minScore,
-                    maxScore: dim.maxScore,
-                    threshold: dim.threshold,
-                    lowLabel: dim.lowLabel,
-                    highLabel: dim.highLabel
-                  }))
-                }
+              dimensions: {
+                create: dimensions.map((dim, index) => ({
+                  name: dim.name,
+                  shortName: dim.shortName,
+                  order: dim.order || index,
+                  minScore: dim.minScore,
+                  maxScore: dim.maxScore,
+                  threshold: dim.threshold,
+                  lowLabel: dim.lowLabel,
+                  highLabel: dim.highLabel
+                }))
               }
+            }
             : {}),
           ...(quizType === QuizType.COMPLEX && complexGradingCriteria
             ? {
-                complexGradingCriteria: {
-                  create: complexGradingCriteria.map((criteria) => ({
-                    name: criteria.name,
-                    label: criteria.label,
-                    color: criteria.color,
-                    recommendations: criteria.recommendations,
-                    areasOfImprovement: criteria.areasOfImprovement || [],
-                    supportNeeded: criteria.supportNeeded || [],
-                    proposedCourses: criteria.proposedCourses || [],
-                    proposedProducts: criteria.proposedProducts || [],
-                    proposedStreaks: criteria.proposedStreaks || [],
-                    proposedBlogPosts: criteria.proposedBlogPosts || [],
-                    description: criteria.description,
-                    scoringLogic: criteria.scoringLogic
-                  }))
-                }
+              complexGradingCriteria: {
+                create: complexGradingCriteria.map((criteria) => ({
+                  name: criteria.name,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses || [],
+                  proposedProducts: criteria.proposedProducts || [],
+                  proposedStreaks: criteria.proposedStreaks || [],
+                  proposedBlogPosts: criteria.proposedBlogPosts || [],
+                  description: criteria.description,
+                  scoringLogic: criteria.scoringLogic
+                }))
               }
+            }
             : {
-                gradingCriteria: {
-                  create: gradingCriteria?.map((criteria) => ({
-                    name: criteria.name,
-                    minScore: criteria.minScore,
-                    maxScore: criteria.maxScore,
-                    label: criteria.label,
-                    color: criteria.color,
-                    recommendations: criteria.recommendations,
-                    areasOfImprovement: criteria.areasOfImprovement || [],
-                    supportNeeded: criteria.supportNeeded || [],
-                    proposedCourses: criteria.proposedCourses,
-                    proposedProducts: criteria.proposedProducts,
-                    proposedStreaks: criteria.proposedStreaks,
-                    proposedBlogPosts: criteria.proposedBlogPosts,
-                    description: criteria.description
-                  })) || []
-                }
-              })
+              gradingCriteria: {
+                create: gradingCriteria?.map((criteria) => ({
+                  name: criteria.name,
+                  minScore: criteria.minScore,
+                  maxScore: criteria.maxScore,
+                  label: criteria.label,
+                  color: criteria.color,
+                  recommendations: criteria.recommendations,
+                  areasOfImprovement: criteria.areasOfImprovement || [],
+                  supportNeeded: criteria.supportNeeded || [],
+                  proposedCourses: criteria.proposedCourses,
+                  proposedProducts: criteria.proposedProducts,
+                  proposedStreaks: criteria.proposedStreaks,
+                  proposedBlogPosts: criteria.proposedBlogPosts,
+                  description: criteria.description
+                })) || []
+              }
+            })
         },
         include: {
           questions: {
@@ -882,27 +884,27 @@ export class QuizService {
 
     const levelDistribution = quiz.quizType === QuizType.DEFAULT
       ? {
-          excellent: results.filter(r => r.level === 'EXCELLENT').length,
-          good: results.filter(r => r.level === 'GOOD').length,
-          fair: results.filter(r => r.level === 'FAIR').length,
-          needsImprovement: results.filter(r => r.level === 'NEEDS_IMPROVEMENT').length
-        }
+        excellent: results.filter(r => r.level === 'EXCELLENT').length,
+        good: results.filter(r => r.level === 'GOOD').length,
+        fair: results.filter(r => r.level === 'FAIR').length,
+        needsImprovement: results.filter(r => r.level === 'NEEDS_IMPROVEMENT').length
+      }
       : { excellent: 0, good: 0, fair: 0, needsImprovement: 0 }
 
     const dimensionDistribution = quiz.quizType === QuizType.COMPLEX && quiz.dimensions.length > 0
       ? quiz.dimensions.reduce((acc, dim) => {
-          const scores = results
-            .map(r => {
-              const dimensionScores = r.dimensionScores as Record<string, number> | null;
-              return dimensionScores?.[dim.shortName] || 0;
-            })
-            .filter(score => score !== 0)
-          const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
-          return {
-            ...acc,
-            [dim.shortName]: { average: avg, min: dim.minScore, max: dim.maxScore }
-          }
-        }, {})
+        const scores = results
+          .map(r => {
+            const dimensionScores = r.dimensionScores as Record<string, number> | null;
+            return dimensionScores?.[dim.shortName] || 0;
+          })
+          .filter(score => score !== 0)
+        const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
+        return {
+          ...acc,
+          [dim.shortName]: { average: avg, min: dim.minScore, max: dim.maxScore }
+        }
+      }, {})
       : {}
 
     const classificationCounts = results.reduce((acc, result) => {
