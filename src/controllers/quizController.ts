@@ -15,9 +15,12 @@ const quizService = new QuizService()
 export class QuizController {
   async createQuiz(req: AuthenticatedRequest, res: Response) {
     try {
-      const validatedData = quizSchema.parse(req.body)
-      const createdBy = req.user?.userId
+      const validatedData = quizSchema.parse(req.body);
+      const createdBy = req.user?.userId;
 
+      console.log("validatedData", validatedData);
+      console.log(req.body);
+      
       if (!createdBy) {
         return res.status(401).json({ 
           success: false,
@@ -132,6 +135,11 @@ export class QuizController {
       const { id } = req.params
       const validatedData = quizUpdateSchema.parse(req.body)
       const updatedBy = req.user?.userId
+
+      console.log("validatedData", validatedData);
+      console.log("updatedBy", updatedBy);
+      console.log(req.body);
+      console.log("id", id);
 
       if (!id) {
         return res.status(400).json({ 

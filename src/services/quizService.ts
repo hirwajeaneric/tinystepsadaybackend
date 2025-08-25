@@ -19,103 +19,177 @@ export class QuizService {
   async createQuiz(data: CreateQuizData, createdBy: string): Promise<Quiz> {
     const { questions, gradingCriteria, complexGradingCriteria, dimensions, quizType, ...quizData } = data
 
-    const quiz = await prisma.quiz.create({
-      data: {
-        ...quizData,
-        quizType: quizType || QuizType.DEFAULT,
-        createdBy,
-        questions: {
-          create: questions.map((question, index) => ({
-            text: question.text,
-            order: question.order || index,
-            dimensionId: question.dimensionId, // For COMPLEX quizzes
-            options: {
-              create: question.options.map((option, optionIndex) => ({
-                text: option.text,
-                value: option.value,
-                order: option.order || optionIndex
-              }))
-            }
-          }))
-        },
-        ...(quizType === QuizType.COMPLEX && dimensions
-          ? {
-              dimensions: {
-                create: dimensions.map((dim, index) => ({
-                  name: dim.name,
-                  shortName: dim.shortName,
-                  order: dim.order || index,
-                  minScore: dim.minScore,
-                  maxScore: dim.maxScore,
-                  threshold: dim.threshold,
-                  lowLabel: dim.lowLabel,
-                  highLabel: dim.highLabel
-                }))
-              }
-            }
-          : {}),
-        ...(quizType === QuizType.COMPLEX && complexGradingCriteria
-          ? {
-              complexGradingCriteria: {
-                create: complexGradingCriteria.map((criteria) => ({
-                  name: criteria.name,
-                  label: criteria.label,
-                  color: criteria.color,
-                  recommendations: criteria.recommendations,
-                  areasOfImprovement: criteria.areasOfImprovement || [],
-                  supportNeeded: criteria.supportNeeded || [],
-                  proposedCourses: criteria.proposedCourses || [],
-                  proposedProducts: criteria.proposedProducts || [],
-                  proposedStreaks: criteria.proposedStreaks || [],
-                  proposedBlogPosts: criteria.proposedBlogPosts || [],
-                  description: criteria.description,
-                  scoringLogic: criteria.scoringLogic
-                }))
-              }
-            }
-          : {
-              gradingCriteria: {
-                create: gradingCriteria?.map((criteria) => ({
-                  name: criteria.name,
-                  minScore: criteria.minScore,
-                  maxScore: criteria.maxScore,
-                  label: criteria.label,
-                  color: criteria.color,
-                  recommendations: criteria.recommendations,
-                  areasOfImprovement: criteria.areasOfImprovement || [],
-                  supportNeeded: criteria.supportNeeded || [],
-                  proposedCourses: criteria.proposedCourses,
-                  proposedProducts: criteria.proposedProducts,
-                  proposedStreaks: criteria.proposedStreaks,
-                  proposedBlogPosts: criteria.proposedBlogPosts,
-                  description: criteria.description
-                }))
-              }
-            })
-      },
-      include: {
-        questions: {
-          include: {
-            options: { orderBy: { order: 'asc' } },
-            dimension: true
+    // For COMPLEX quizzes, we need to create dimensions first, then questions
+    if (quizType === QuizType.COMPLEX && dimensions) {
+      // Step 1: Create the quiz with dimensions first
+      const quiz = await prisma.quiz.create({
+        data: {
+          ...quizData,
+          quizType: quizType || QuizType.DEFAULT,
+          createdBy,
+          dimensions: {
+            create: dimensions.map((dim, index) => ({
+              name: dim.name,
+              shortName: dim.shortName,
+              order: dim.order || index,
+              minScore: dim.minScore,
+              maxScore: dim.maxScore,
+              threshold: dim.threshold,
+              lowLabel: dim.lowLabel,
+              highLabel: dim.highLabel
+            }))
           },
-          orderBy: { order: 'asc' }
+          complexGradingCriteria: {
+            create: complexGradingCriteria?.map((criteria) => ({
+              name: criteria.name,
+              label: criteria.label,
+              color: criteria.color,
+              recommendations: criteria.recommendations,
+              areasOfImprovement: criteria.areasOfImprovement || [],
+              supportNeeded: criteria.supportNeeded || [],
+              proposedCourses: criteria.proposedCourses || [],
+              proposedProducts: criteria.proposedProducts || [],
+              proposedStreaks: criteria.proposedStreaks || [],
+              proposedBlogPosts: criteria.proposedBlogPosts || [],
+              description: criteria.description,
+              scoringLogic: criteria.scoringLogic
+            })) || []
+          }
         },
-        gradingCriteria: { orderBy: { minScore: 'asc' } },
-        complexGradingCriteria: true,
-        dimensions: { orderBy: { order: 'asc' } },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true
+        include: {
+          dimensions: { orderBy: { order: 'asc' } },
+          complexGradingCriteria: true,
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
           }
         }
-      }
-    })
+      })
 
-    return this.formatQuiz(quiz)
+      // Step 2: Create a mapping from dimension order to dimension ID
+      const dimensionMap = new Map<number, string>()
+      quiz.dimensions.forEach(dim => {
+        dimensionMap.set(dim.order, dim.id)
+      })
+
+      // Step 3: Add questions with proper dimension references
+      const questionsWithDimensions = questions.map((question, index) => {
+        // Find the dimension by order if dimensionId is not provided
+        let dimensionId = question.dimensionId
+        if (!dimensionId && question.order !== undefined) {
+          dimensionId = dimensionMap.get(question.order)
+        }
+        
+        return {
+          text: question.text,
+          order: question.order || index,
+          dimensionId: dimensionId,
+          options: {
+            create: question.options.map((option, optionIndex) => ({
+              text: option.text,
+              value: option.value,
+              order: option.order || optionIndex
+            }))
+          }
+        }
+      })
+
+      // Step 4: Update the quiz with questions
+      const updatedQuiz = await prisma.quiz.update({
+        where: { id: quiz.id },
+        data: {
+          questions: {
+            create: questionsWithDimensions
+          }
+        },
+        include: {
+          questions: {
+            include: {
+              options: { orderBy: { order: 'asc' } },
+              dimension: true
+            },
+            orderBy: { order: 'asc' }
+          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
+          }
+        }
+      })
+
+      return this.formatQuiz(updatedQuiz)
+    } else {
+      // For DEFAULT quizzes, create everything in one go
+      const quiz = await prisma.quiz.create({
+        data: {
+          ...quizData,
+          quizType: quizType || QuizType.DEFAULT,
+          createdBy,
+          questions: {
+            create: questions.map((question, index) => ({
+              text: question.text,
+              order: question.order || index,
+              options: {
+                create: question.options.map((option, optionIndex) => ({
+                  text: option.text,
+                  value: option.value,
+                  order: option.order || optionIndex
+                }))
+              }
+            }))
+          },
+          gradingCriteria: {
+            create: gradingCriteria?.map((criteria) => ({
+              name: criteria.name,
+              minScore: criteria.minScore,
+              maxScore: criteria.maxScore,
+              label: criteria.label,
+              color: criteria.color,
+              recommendations: criteria.recommendations,
+              areasOfImprovement: criteria.areasOfImprovement || [],
+              supportNeeded: criteria.supportNeeded || [],
+              proposedCourses: criteria.proposedCourses,
+              proposedProducts: criteria.proposedProducts,
+              proposedStreaks: criteria.proposedStreaks,
+              proposedBlogPosts: criteria.proposedBlogPosts,
+              description: criteria.description
+            })) || []
+          }
+        },
+        include: {
+          questions: {
+            include: {
+              options: { orderBy: { order: 'asc' } }
+            },
+            orderBy: { order: 'asc' }
+          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
+          }
+        }
+      })
+
+      return this.formatQuiz(quiz)
+    }
   }
 
   private formatQuiz(quiz: any): Quiz {
@@ -384,105 +458,217 @@ export class QuizService {
       await prisma.quizDimension.deleteMany({ where: { quizId: id } })
     }
 
-    const quiz = await prisma.quiz.update({
-      where: { id },
-      data: {
-        ...quizData,
-        quizType: quizType || QuizType.DEFAULT,
-        ...(questions && {
-          questions: {
-            create: questions.map((question, index) => ({
-              text: question.text,
-              order: question.order || index,
-              dimensionId: question.dimensionId,
-              options: {
-                create: question.options.map((option, optionIndex) => ({
-                  text: option.text,
-                  value: option.value,
-                  order: option.order || optionIndex
-                }))
-              }
+    // For COMPLEX quizzes, we need to create dimensions first, then questions
+    if (quizType === QuizType.COMPLEX && dimensions && questions) {
+      // Step 1: Update the quiz with dimensions first
+      const quiz = await prisma.quiz.update({
+        where: { id },
+        data: {
+          ...quizData,
+          quizType: quizType || QuizType.DEFAULT,
+          dimensions: {
+            create: dimensions.map((dim, index) => ({
+              name: dim.name,
+              shortName: dim.shortName,
+              order: dim.order || index,
+              minScore: dim.minScore,
+              maxScore: dim.maxScore,
+              threshold: dim.threshold,
+              lowLabel: dim.lowLabel,
+              highLabel: dim.highLabel
             }))
-          }
-        }),
-        ...(quizType === QuizType.COMPLEX && dimensions
-          ? {
-              dimensions: {
-                create: dimensions.map((dim, index) => ({
-                  name: dim.name,
-                  shortName: dim.shortName,
-                  order: dim.order || index,
-                  minScore: dim.minScore,
-                  maxScore: dim.maxScore,
-                  threshold: dim.threshold,
-                  lowLabel: dim.lowLabel,
-                  highLabel: dim.highLabel
-                }))
-              }
-            }
-          : {}),
-        ...(quizType === QuizType.COMPLEX && complexGradingCriteria
-          ? {
-              complexGradingCriteria: {
-                create: complexGradingCriteria.map((criteria) => ({
-                  name: criteria.name,
-                  label: criteria.label,
-                  color: criteria.color,
-                  recommendations: criteria.recommendations,
-                  areasOfImprovement: criteria.areasOfImprovement || [],
-                  supportNeeded: criteria.supportNeeded || [],
-                  proposedCourses: criteria.proposedCourses || [],
-                  proposedProducts: criteria.proposedProducts || [],
-                  proposedStreaks: criteria.proposedStreaks || [],
-                  proposedBlogPosts: criteria.proposedBlogPosts || [],
-                  description: criteria.description,
-                  scoringLogic: criteria.scoringLogic
-                }))
-              }
-            }
-          : {
-              gradingCriteria: {
-                create: gradingCriteria?.map((criteria) => ({
-                  name: criteria.name,
-                  minScore: criteria.minScore,
-                  maxScore: criteria.maxScore,
-                  label: criteria.label,
-                  color: criteria.color,
-                  recommendations: criteria.recommendations,
-                  areasOfImprovement: criteria.areasOfImprovement || [],
-                  supportNeeded: criteria.supportNeeded || [],
-                  proposedCourses: criteria.proposedCourses,
-                  proposedProducts: criteria.proposedProducts,
-                  proposedStreaks: criteria.proposedStreaks,
-                  proposedBlogPosts: criteria.proposedBlogPosts,
-                  description: criteria.description
-                }))
-              }
-            })
-      },
-      include: {
-        questions: {
-          include: {
-            options: { orderBy: { order: 'asc' } },
-            dimension: true
           },
-          orderBy: { order: 'asc' }
+          complexGradingCriteria: {
+            create: complexGradingCriteria?.map((criteria) => ({
+              name: criteria.name,
+              label: criteria.label,
+              color: criteria.color,
+              recommendations: criteria.recommendations,
+              areasOfImprovement: criteria.areasOfImprovement || [],
+              supportNeeded: criteria.supportNeeded || [],
+              proposedCourses: criteria.proposedCourses || [],
+              proposedProducts: criteria.proposedProducts || [],
+              proposedStreaks: criteria.proposedStreaks || [],
+              proposedBlogPosts: criteria.proposedBlogPosts || [],
+              description: criteria.description,
+              scoringLogic: criteria.scoringLogic
+            })) || []
+          }
         },
-        gradingCriteria: { orderBy: { minScore: 'asc' } },
-        complexGradingCriteria: true,
-        dimensions: { orderBy: { order: 'asc' } },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true
+        include: {
+          dimensions: { orderBy: { order: 'asc' } },
+          complexGradingCriteria: true,
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
           }
         }
-      }
-    })
+      })
 
-    return this.formatQuiz(quiz)
+      // Step 2: Create a mapping from dimension order to dimension ID
+      const dimensionMap = new Map<number, string>()
+      quiz.dimensions.forEach(dim => {
+        dimensionMap.set(dim.order, dim.id)
+      })
+
+      // Step 3: Add questions with proper dimension references
+      const questionsWithDimensions = questions.map((question, index) => {
+        // Find the dimension by order if dimensionId is not provided
+        let dimensionId = question.dimensionId
+        if (!dimensionId && question.order !== undefined) {
+          dimensionId = dimensionMap.get(question.order)
+        }
+        
+        return {
+          text: question.text,
+          order: question.order || index,
+          dimensionId: dimensionId,
+          options: {
+            create: question.options.map((option, optionIndex) => ({
+              text: option.text,
+              value: option.value,
+              order: option.order || optionIndex
+            }))
+          }
+        }
+      })
+
+      // Step 4: Update the quiz with questions
+      const updatedQuiz = await prisma.quiz.update({
+        where: { id: quiz.id },
+        data: {
+          questions: {
+            create: questionsWithDimensions
+          }
+        },
+        include: {
+          questions: {
+            include: {
+              options: { orderBy: { order: 'asc' } },
+              dimension: true
+            },
+            orderBy: { order: 'asc' }
+          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
+          }
+        }
+      })
+
+      return this.formatQuiz(updatedQuiz)
+    } else {
+      // For DEFAULT quizzes or when not updating questions, create everything in one go
+      const quiz = await prisma.quiz.update({
+        where: { id },
+        data: {
+          ...quizData,
+          quizType: quizType || QuizType.DEFAULT,
+          ...(questions && {
+            questions: {
+              create: questions.map((question, index) => ({
+                text: question.text,
+                order: question.order || index,
+                options: {
+                  create: question.options.map((option, optionIndex) => ({
+                    text: option.text,
+                    value: option.value,
+                    order: option.order || optionIndex
+                  }))
+                }
+              }))
+            }
+          }),
+          ...(quizType === QuizType.COMPLEX && dimensions
+            ? {
+                dimensions: {
+                  create: dimensions.map((dim, index) => ({
+                    name: dim.name,
+                    shortName: dim.shortName,
+                    order: dim.order || index,
+                    minScore: dim.minScore,
+                    maxScore: dim.maxScore,
+                    threshold: dim.threshold,
+                    lowLabel: dim.lowLabel,
+                    highLabel: dim.highLabel
+                  }))
+                }
+              }
+            : {}),
+          ...(quizType === QuizType.COMPLEX && complexGradingCriteria
+            ? {
+                complexGradingCriteria: {
+                  create: complexGradingCriteria.map((criteria) => ({
+                    name: criteria.name,
+                    label: criteria.label,
+                    color: criteria.color,
+                    recommendations: criteria.recommendations,
+                    areasOfImprovement: criteria.areasOfImprovement || [],
+                    supportNeeded: criteria.supportNeeded || [],
+                    proposedCourses: criteria.proposedCourses || [],
+                    proposedProducts: criteria.proposedProducts || [],
+                    proposedStreaks: criteria.proposedStreaks || [],
+                    proposedBlogPosts: criteria.proposedBlogPosts || [],
+                    description: criteria.description,
+                    scoringLogic: criteria.scoringLogic
+                  }))
+                }
+              }
+            : {
+                gradingCriteria: {
+                  create: gradingCriteria?.map((criteria) => ({
+                    name: criteria.name,
+                    minScore: criteria.minScore,
+                    maxScore: criteria.maxScore,
+                    label: criteria.label,
+                    color: criteria.color,
+                    recommendations: criteria.recommendations,
+                    areasOfImprovement: criteria.areasOfImprovement || [],
+                    supportNeeded: criteria.supportNeeded || [],
+                    proposedCourses: criteria.proposedCourses,
+                    proposedProducts: criteria.proposedProducts,
+                    proposedStreaks: criteria.proposedStreaks,
+                    proposedBlogPosts: criteria.proposedBlogPosts,
+                    description: criteria.description
+                  })) || []
+                }
+              })
+        },
+        include: {
+          questions: {
+            include: {
+              options: { orderBy: { order: 'asc' } },
+              dimension: true
+            },
+            orderBy: { order: 'asc' }
+          },
+          gradingCriteria: { orderBy: { minScore: 'asc' } },
+          complexGradingCriteria: true,
+          dimensions: { orderBy: { order: 'asc' } },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true
+            }
+          }
+        }
+      })
+
+      return this.formatQuiz(quiz)
+    }
   }
 
   async deleteQuiz(id: string, deletedBy: string): Promise<void> {
