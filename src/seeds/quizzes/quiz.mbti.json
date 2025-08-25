@@ -4,6 +4,7 @@
     "title": "Myers-Briggs Personality Type Indicator (MBTI) Assessment",
     "subtitle": "Discover your unique personality type and gain insights into your preferences and behaviors",
     "description": "This comprehensive MBTI assessment evaluates your preferences across four key dimensions: Extraversion vs. Introversion (E/I), Sensing vs. Intuition (S/N), Thinking vs. Feeling (T/F), and Judging vs. Perceiving (J/P). Based on Carl Jung's theory of psychological types, developed by Isabel Briggs Myers and Katharine Cook Briggs, it assigns one of 16 personality types. The quiz consists of 32 questions (8 per dimension) with a 4-point scale. Results are determined by summing scores per dimension (range 8-32, threshold at 20) and combining preferences. Note: This is for self-discovery and not a professional diagnosis. For accurate results, answer honestly based on your typical behavior.",
+    "coverImage": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&h=600&fit=crop&crop=center",
     "category": "Personal Growth",
     "estimatedTime": "10-15 minutes",
     "difficulty": "BEGINNER",

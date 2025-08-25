@@ -252,6 +252,7 @@ model Quiz {
   title                 String
   subtitle              String?
   description           String
+  coverImage            String?           // URL to the quiz cover image (optional for now)
   category              String
   estimatedTime         String
   difficulty            QuizDifficulty    @default(BEGINNER)

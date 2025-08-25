@@ -112,6 +112,7 @@ export const quizSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
   subtitle: z.string().max(200, "Subtitle must be less than 200 characters").optional(),
   description: z.string().min(1, "Description is required").max(1000, "Description must be less than 1000 characters"),
+  coverImage: z.string().url("Cover image must be a valid URL").optional(),
   category: z.string().min(1, "Category is required").max(100, "Category must be less than 100 characters"),
   estimatedTime: z.string().min(1, "Estimated time is required").max(50, "Estimated time must be less than 50 characters"),
   difficulty: z.nativeEnum(QuizDifficulty),

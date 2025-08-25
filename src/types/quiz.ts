@@ -81,6 +81,7 @@ export interface Quiz {
   title: string
   subtitle?: string
   description: string
+  coverImage?: string
   category: string
   estimatedTime: string
   difficulty: QuizDifficulty
@@ -179,6 +180,7 @@ export interface CreateQuizData {
   title: string
   subtitle?: string
   description: string
+  coverImage?: string
   category: string
   estimatedTime: string
   difficulty: QuizDifficulty
@@ -250,6 +252,7 @@ export interface UpdateQuizData {
   title?: string
   subtitle?: string
   description?: string
+  coverImage?: string
   category?: string
   estimatedTime?: string
   difficulty?: QuizDifficulty
