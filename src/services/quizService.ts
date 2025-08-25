@@ -950,7 +950,8 @@ export class QuizService {
 
     const where: any = {
       isPublic: true,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      quizType: { in: [QuizType.DEFAULT, QuizType.COMPLEX] }
     }
 
     if (search && search.trim()) {
