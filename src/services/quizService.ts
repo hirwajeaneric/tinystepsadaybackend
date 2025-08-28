@@ -1036,7 +1036,6 @@ export class QuizService {
       return this.calculateComplexQuizResult(quiz, answers)
     }
 
-    // DEFAULT quiz scoring (unchanged)
     let totalScore = 0
     let maxScore = 0
 
@@ -1069,17 +1068,7 @@ export class QuizService {
     let proposedBlogPosts: Array<{ id: string; title: string; slug: string }> = []
 
     if (matchingCriteria) {
-      const nameLower = matchingCriteria.name.toLowerCase()
-      if (nameLower.includes('excellent') || nameLower.includes('master')) {
-        level = 'EXCELLENT'
-      } else if (nameLower.includes('good') || nameLower.includes('builder')) {
-        level = 'GOOD'
-      } else if (nameLower.includes('fair') || nameLower.includes('learner')) {
-        level = 'FAIR'
-      } else {
-        level = 'NEEDS_IMPROVEMENT'
-      }
-
+      level = matchingCriteria.level || this.calculateLevelFromPercentage(percentage)
       feedback = matchingCriteria.description || `You scored in the ${matchingCriteria.name} range.`
       recommendations = matchingCriteria.recommendations || []
       classification = matchingCriteria.label || matchingCriteria.name
@@ -1090,51 +1079,16 @@ export class QuizService {
       proposedStreaks = matchingCriteria.proposedStreaks || []
       proposedBlogPosts = matchingCriteria.proposedBlogPosts || []
     } else {
-      if (percentage >= 80) {
-        level = 'EXCELLENT'
-        feedback = "Excellent! You demonstrate mastery in this area."
-        recommendations = [
-          "Continue building on your strong foundation",
-          "Share your knowledge with others",
-          "Consider mentoring or coaching others"
-        ]
-        classification = "Master"
-        areasOfImprovement = []
-        supportNeeded = ["Advanced resources", "Mentorship opportunities"]
-      } else if (percentage >= 60) {
-        level = 'GOOD'
-        feedback = "Good! You have a solid foundation with room for improvement."
-        recommendations = [
-          "Focus on consistency in your practice",
-          "Identify and work on your weakest areas",
-          "Set specific, measurable goals"
-        ]
-        classification = "Builder"
-        areasOfImprovement = ["Consistency", "Advanced techniques"]
-        supportNeeded = ["Practice tools", "Accountability partner"]
-      } else if (percentage >= 40) {
-        level = 'FAIR'
-        feedback = "Fair. You have potential but need to develop better practices."
-        recommendations = [
-          "Start with one small change",
-          "Create a structured practice routine",
-          "Seek accountability from friends or family"
-        ]
-        classification = "Learner"
-        areasOfImprovement = ["Basic practices", "Consistency", "Understanding"]
-        supportNeeded = ["Beginner resources", "Practice guidance", "Community support"]
-      } else {
-        level = 'NEEDS_IMPROVEMENT'
-        feedback = "You have significant room for improvement in this area."
-        recommendations = [
-          "Start with very small, manageable changes",
-          "Consider working with a coach or mentor",
-          "Focus on building one practice at a time"
-        ]
-        classification = "Starter"
-        areasOfImprovement = ["Basic understanding", "Practice habits", "Consistency"]
-        supportNeeded = ["Professional guidance", "Structured programs", "Regular check-ins"]
-      }
+      level = this.calculateLevelFromPercentage(percentage)
+      feedback = `You scored ${percentage}%.`
+      recommendations = []
+      classification = "Standard"
+      areasOfImprovement = []
+      supportNeeded = []
+      proposedCourses = []
+      proposedProducts = []
+      proposedStreaks = []
+      proposedBlogPosts = []
     }
 
     return {
@@ -1332,6 +1286,189 @@ export class QuizService {
       proposedBlogPosts: result.proposedBlogPosts || [],
       user: result.user || null,
       quiz: result.quiz || null
+    }
+  }
+
+  private calculateLevelFromPercentage(percentage: number): QuizResultLevel {
+    if (percentage >= 90) return 'EXCELLENT'
+    if (percentage >= 70) return 'GOOD'
+    if (percentage >= 50) return 'FAIR'
+    return 'NEEDS_IMPROVEMENT'
+  }
+
+  // Data repair utility method for fixing existing quiz data
+  async repairQuizData(quizId: string): Promise<{ success: boolean; message: string; issues: string[] }> {
+    const issues: string[] = []
+    
+    try {
+      const quiz = await prisma.quiz.findUnique({
+        where: { id: quizId },
+        include: {
+          questions: {
+            include: {
+              options: true,
+              dimension: true
+            }
+          },
+          dimensions: true,
+          complexGradingCriteria: true
+        }
+      })
+
+      if (!quiz) {
+        throw new Error("Quiz not found")
+      }
+
+      // Check for questions without dimensionId
+      const questionsWithoutDimension = quiz.questions.filter(q => !q.dimensionId)
+      if (questionsWithoutDimension.length > 0) {
+        issues.push(`${questionsWithoutDimension.length} questions missing dimensionId`)
+        
+        // Try to fix by assigning dimensions based on order
+        if (quiz.dimensions && quiz.dimensions.length > 0) {
+          for (const question of questionsWithoutDimension) {
+            const dimensionIndex = Math.floor(question.order / Math.ceil(quiz.questions.length / quiz.dimensions.length))
+            const dimension = quiz.dimensions[dimensionIndex]
+            
+            if (dimension) {
+              await prisma.quizQuestion.update({
+                where: { id: question.id },
+                data: { dimensionId: dimension.id }
+              })
+              issues.push(`Fixed question ${question.id} - assigned to dimension ${dimension.shortName}`)
+            }
+          }
+        }
+      }
+
+      // Check for dimensions without proper configuration
+      if (quiz.dimensions) {
+        for (const dim of quiz.dimensions) {
+          if (!dim.minScore || !dim.maxScore) {
+            issues.push(`Dimension ${dim.shortName} missing minScore or maxScore`)
+            
+            // Calculate reasonable defaults
+            const dimQuestions = quiz.questions.filter(q => q.dimensionId === dim.id)
+            if (dimQuestions.length > 0) {
+              let totalMaxScore = 0
+              for (const question of dimQuestions) {
+                if (question.options && question.options.length > 0) {
+                  const maxOptionValue = Math.max(...question.options.map((o: any) => o.value))
+                  totalMaxScore += maxOptionValue
+                }
+              }
+              
+              const minScore = 0
+              const maxScore = totalMaxScore
+              
+              await prisma.quizDimension.update({
+                where: { id: dim.id },
+                data: { minScore, maxScore }
+              })
+              
+              issues.push(`Fixed dimension ${dim.shortName} - set minScore: ${minScore}, maxScore: ${maxScore}`)
+            }
+          }
+        }
+      }
+
+      // Check for complex grading criteria issues
+      if (quiz.complexGradingCriteria) {
+        for (const criteria of quiz.complexGradingCriteria) {
+          const scoringLogic = criteria.scoringLogic as any
+          if (!scoringLogic || !scoringLogic.type) {
+            issues.push(`Complex grading criteria ${criteria.name} missing scoring logic`)
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `Quiz data repair completed. ${issues.length} issues found and addressed.`,
+        issues
+      }
+    } catch (error) {
+      console.error(`Error repairing quiz data for ${quizId}:`, error)
+      return {
+        success: false,
+        message: `Failed to repair quiz data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        issues
+      }
+    }
+  }
+
+  // Utility method to validate quiz data integrity
+  async validateQuizData(quizId: string): Promise<{ isValid: boolean; issues: string[]; warnings: string[] }> {
+    const issues: string[] = []
+    const warnings: string[] = []
+    
+    try {
+      const quiz = await prisma.quiz.findUnique({
+        where: { id: quizId },
+        include: {
+          questions: {
+            include: {
+              options: true,
+              dimension: true
+            }
+          },
+          dimensions: true,
+          complexGradingCriteria: true
+        }
+      })
+
+      if (!quiz) {
+        return { isValid: false, issues: ["Quiz not found"], warnings: [] }
+      }
+
+      // Check questions
+      if (!quiz.questions || quiz.questions.length === 0) {
+        issues.push("No questions found")
+      } else {
+        for (const question of quiz.questions) {
+          if (!question.options || question.options.length === 0) {
+            issues.push(`Question ${question.order + 1} has no options`)
+          }
+          
+          if (quiz.quizType === QuizType.COMPLEX && !question.dimensionId) {
+            issues.push(`Question ${question.order + 1} missing dimensionId`)
+          }
+        }
+      }
+
+      // Check dimensions for complex quizzes
+      if (quiz.quizType === QuizType.COMPLEX) {
+        if (!quiz.dimensions || quiz.dimensions.length === 0) {
+          issues.push("Complex quiz missing dimensions")
+        } else {
+          for (const dim of quiz.dimensions) {
+            if (!dim.minScore || !dim.maxScore) {
+              issues.push(`Dimension ${dim.shortName} missing score range`)
+            }
+            
+            if (!dim.threshold) {
+              warnings.push(`Dimension ${dim.shortName} missing threshold (may affect scoring)`)
+            }
+          }
+        }
+
+        if (!quiz.complexGradingCriteria || quiz.complexGradingCriteria.length === 0) {
+          issues.push("Complex quiz missing grading criteria")
+        }
+      }
+
+      return {
+        isValid: issues.length === 0,
+        issues,
+        warnings
+      }
+    } catch (error) {
+      console.error(`Error validating quiz data for ${quizId}:`, error)
+      return {
+        isValid: false,
+        issues: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        warnings: []
+      }
     }
   }
 }
