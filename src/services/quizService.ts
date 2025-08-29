@@ -19,6 +19,15 @@ export class QuizService {
   async createQuiz(data: CreateQuizData, createdBy: string): Promise<Quiz> {
     const { questions, gradingCriteria, complexGradingCriteria, dimensions, quizType, ...quizData } = data
 
+    // Validate quiz data before creation
+    const validationResult = this.validateQuizDataBeforeCreation(data)
+    if (!validationResult.isValid) {
+      throw new ValidationError(
+        `Quiz validation failed: ${validationResult.errors.join(', ')}`,
+        "QUIZ_VALIDATION_FAILED"
+      )
+    }
+
     // For COMPLEX quizzes, we need to create dimensions first, then questions
     if (quizType === QuizType.COMPLEX && dimensions) {
       // Step 1: Create the quiz with dimensions first
@@ -78,11 +87,21 @@ export class QuizService {
 
       // Step 3: Add questions with proper dimension references
       const questionsWithDimensions = questions.map((question, index) => {
-        // Only use order-based mapping if dimensionId is explicitly undefined/null
+        // For complex quizzes, ensure proper dimension assignment
         let dimensionId = question.dimensionId
-        if (dimensionId === undefined || dimensionId === null) {
-          // Fall back to order-based mapping only when no dimensionId provided
-          dimensionId = dimensionMap.get(question.order)
+        
+        // If no dimensionId provided, assign based on question order
+        if (!dimensionId) {
+          const dimensionIndex = Math.floor(index / Math.ceil(questions.length / quiz.dimensions.length))
+          dimensionId = dimensionMap.get(dimensionIndex)
+        }
+        
+        // Validate that the dimensionId exists
+        if (!dimensionId || !dimensionMap.has(quiz.dimensions.find(d => d.id === dimensionId)?.order || -1)) {
+          throw new ValidationError(
+            `Question ${index + 1} has invalid dimensionId: ${dimensionId}`,
+            "INVALID_DIMENSION_ID"
+          )
         }
 
         return {
@@ -90,7 +109,7 @@ export class QuizService {
           order: question.order || index,
           dimensionId: dimensionId,
           options: {
-            create: question.options.map((option, optionIndex) => ({
+            create: question.options.map((option: any, optionIndex: number) => ({
               text: option.text,
               value: option.value,
               order: option.order || optionIndex
@@ -142,7 +161,7 @@ export class QuizService {
               text: question.text,
               order: question.order || index,
               options: {
-                create: question.options.map((option, optionIndex) => ({
+                create: question.options.map((option: any, optionIndex: number) => ({
                   text: option.text,
                   value: option.value,
                   order: option.order || optionIndex
@@ -191,6 +210,279 @@ export class QuizService {
 
       return this.formatQuiz(quiz)
     }
+  }
+
+  // Progressive quiz creation - create quiz with basic info first
+  async createQuizBasic(data: CreateQuizData, createdBy: string): Promise<Quiz> {
+    const { questions, gradingCriteria, complexGradingCriteria, dimensions, ...basicData } = data
+
+    // Validate only basic information
+    const basicValidation = this.validateBasicQuizData(basicData)
+    if (!basicValidation.isValid) {
+      throw new ValidationError(
+        `Basic quiz validation failed: ${basicValidation.errors.join(', ')}`,
+        "QUIZ_BASIC_VALIDATION_FAILED"
+      )
+    }
+
+    // Create quiz with only basic information
+    const quiz = await prisma.quiz.create({
+      data: {
+        ...basicData,
+        quizType: basicData.quizType || QuizType.DEFAULT,
+        status: 'DRAFT',
+        createdBy,
+        // Don't create questions, dimensions, or grading criteria yet
+        questions: { create: [] },
+        gradingCriteria: { create: [] },
+        complexGradingCriteria: { create: [] },
+        dimensions: { create: [] }
+      },
+      include: {
+        questions: { include: { options: true } },
+        gradingCriteria: true,
+        complexGradingCriteria: true,
+        dimensions: true,
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return this.formatQuiz(quiz)
+  }
+
+  // Add dimensions to existing quiz
+  async addQuizDimensions(quizId: string, dimensions: any[], updatedBy: string): Promise<Quiz> {
+    // Verify quiz exists and user has permission
+    const existingQuiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      select: { createdBy: true, quizType: true }
+    })
+
+    if (!existingQuiz) {
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
+    }
+
+    if (existingQuiz.createdBy !== updatedBy) {
+      throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
+    }
+
+    if (existingQuiz.quizType !== QuizType.COMPLEX) {
+      throw new ValidationError("Dimensions can only be added to complex quizzes", "INVALID_QUIZ_TYPE")
+    }
+
+    // Validate dimensions
+    const dimensionValidation = this.validateDimensions(dimensions)
+    if (!dimensionValidation.isValid) {
+      throw new ValidationError(
+        `Dimension validation failed: ${dimensionValidation.errors.join(', ')}`,
+        "DIMENSION_VALIDATION_FAILED"
+      )
+    }
+
+    // Delete existing dimensions and create new ones
+    await prisma.quizDimension.deleteMany({ where: { quizId } })
+
+    const quiz = await prisma.quiz.update({
+      where: { id: quizId },
+      data: {
+        dimensions: {
+          create: dimensions.map((dim, index) => ({
+            name: dim.name,
+            shortName: dim.shortName,
+            order: dim.order || index,
+            minScore: dim.minScore,
+            maxScore: dim.maxScore,
+            threshold: dim.threshold,
+            lowLabel: dim.lowLabel,
+            highLabel: dim.highLabel
+          }))
+        }
+      },
+      include: {
+        questions: { include: { options: true } },
+        gradingCriteria: true,
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return this.formatQuiz(quiz)
+  }
+
+  // Add questions to existing quiz with proper dimension assignment
+  async addQuizQuestions(quizId: string, questions: any[], updatedBy: string): Promise<Quiz> {
+    // Verify quiz exists and user has permission
+    const existingQuiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        dimensions: true,
+        questions: { include: { options: true } }
+      }
+    })
+
+    if (!existingQuiz) {
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
+    }
+
+    if (existingQuiz.createdBy !== updatedBy) {
+      throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
+    }
+
+    // Validate questions
+    const questionValidation = this.validateQuestions(questions, existingQuiz.quizType, existingQuiz.dimensions)
+    if (!questionValidation.isValid) {
+      throw new ValidationError(
+        `Question validation failed: ${questionValidation.errors.join(', ')}`,
+        "QUESTION_VALIDATION_FAILED"
+      )
+    }
+
+    // Delete existing questions and create new ones
+    await prisma.quizQuestion.deleteMany({ where: { quizId } })
+
+    const quiz = await prisma.quiz.update({
+      where: { id: quizId },
+      data: {
+        questions: {
+          create: questions.map((question, index) => ({
+            text: question.text,
+            order: question.order || index,
+            dimensionId: question.dimensionId, // This should now be valid
+            options: {
+              create: question.options.map((option: any, optionIndex: number) => ({
+                text: option.text,
+                value: option.value,
+                order: option.order || optionIndex
+              }))
+            }
+          }))
+        }
+      },
+      include: {
+        questions: {
+          include: {
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
+          },
+          orderBy: { order: 'asc' }
+        },
+        gradingCriteria: true,
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return this.formatQuiz(quiz)
+  }
+
+  // Add grading criteria to existing quiz
+  async addQuizGradingCriteria(quizId: string, gradingData: any, updatedBy: string): Promise<Quiz> {
+    // Verify quiz exists and user has permission
+    const existingQuiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      select: { createdBy: true, quizType: true }
+    })
+
+    if (!existingQuiz) {
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
+    }
+
+    if (existingQuiz.createdBy !== updatedBy) {
+      throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
+    }
+
+    // Delete existing grading criteria
+    if (existingQuiz.quizType === QuizType.COMPLEX) {
+      await prisma.complexGradingCriteria.deleteMany({ where: { quizId } })
+    } else {
+      await prisma.gradingCriteria.deleteMany({ where: { quizId } })
+    }
+
+    // Create new grading criteria
+    const quiz = await prisma.quiz.update({
+      where: { id: quizId },
+      data: existingQuiz.quizType === QuizType.COMPLEX ? {
+        complexGradingCriteria: {
+          create: gradingData.complexGradingCriteria.map((criteria: any) => ({
+            name: criteria.name,
+            label: criteria.label,
+            color: criteria.color,
+            recommendations: criteria.recommendations,
+            areasOfImprovement: criteria.areasOfImprovement || [],
+            supportNeeded: criteria.supportNeeded || [],
+            proposedCourses: criteria.proposedCourses || [],
+            proposedProducts: criteria.proposedProducts || [],
+            proposedStreaks: criteria.proposedStreaks || [],
+            proposedBlogPosts: criteria.proposedBlogPosts || [],
+            description: criteria.description,
+            scoringLogic: criteria.scoringLogic
+          }))
+        }
+      } : {
+        gradingCriteria: {
+          create: gradingData.gradingCriteria.map((criteria: any) => ({
+            name: criteria.name,
+            minScore: criteria.minScore,
+            maxScore: criteria.maxScore,
+            label: criteria.label,
+            color: criteria.color,
+            recommendations: criteria.recommendations,
+            areasOfImprovement: criteria.areasOfImprovement || [],
+            supportNeeded: criteria.supportNeeded || [],
+            proposedCourses: criteria.proposedCourses,
+            proposedProducts: criteria.proposedProducts,
+            proposedStreaks: criteria.proposedStreaks || [],
+            proposedBlogPosts: criteria.proposedBlogPosts || [],
+            description: criteria.description
+          }))
+        }
+      },
+      include: {
+        questions: {
+          include: {
+            options: { orderBy: { order: 'asc' } },
+            dimension: true
+          },
+          orderBy: { order: 'asc' }
+        },
+        gradingCriteria: { orderBy: { minScore: 'asc' } },
+        complexGradingCriteria: true,
+        dimensions: { orderBy: { order: 'asc' } },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return this.formatQuiz(quiz)
   }
 
   private formatQuiz(quiz: any): Quiz {
@@ -531,7 +823,7 @@ export class QuizService {
           order: question.order || index,
           dimensionId: dimensionId,
           options: {
-            create: question.options.map((option, optionIndex) => ({
+            create: question.options.map((option: any, optionIndex: number) => ({
               text: option.text,
               value: option.value,
               order: option.order || optionIndex
@@ -584,7 +876,7 @@ export class QuizService {
                 text: question.text,
                 order: question.order || index,
                 options: {
-                  create: question.options.map((option, optionIndex) => ({
+                  create: question.options.map((option: any, optionIndex: number) => ({
                     text: option.text,
                     value: option.value,
                     order: option.order || optionIndex
@@ -641,8 +933,8 @@ export class QuizService {
                   supportNeeded: criteria.supportNeeded || [],
                   proposedCourses: criteria.proposedCourses,
                   proposedProducts: criteria.proposedProducts,
-                  proposedStreaks: criteria.proposedStreaks,
-                  proposedBlogPosts: criteria.proposedBlogPosts,
+                  proposedStreaks: criteria.proposedStreaks || [],
+                  proposedBlogPosts: criteria.proposedBlogPosts || [],
                   description: criteria.description
                 })) || []
               }
@@ -692,7 +984,7 @@ export class QuizService {
   }
 
   async submitQuiz(submission: QuizSubmission, userId: string): Promise<QuizResult> {
-    const { quizId, answers, timeSpent } = submission
+    const { quizId, answers, timeSpent } = submission;
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
@@ -1134,6 +1426,28 @@ export class QuizService {
       }
     }
 
+    // Debug logging for troubleshooting
+    console.log('Quiz dimensions:', quiz.dimensions.map((d: any) => ({ id: d.id, shortName: d.shortName, threshold: d.threshold })))
+    console.log('Calculated dimension scores:', dimensionScores)
+    console.log('Complex grading criteria:', quiz.complexGradingCriteria.map((c: any) => ({ name: c.name, scoringLogic: c.scoringLogic })))
+
+    // Check if we have a dimension ID mismatch issue
+    const totalQuestionsWithDimensions = quiz.questions.filter((q: any) => q.dimensionId).length
+    const totalQuestions = quiz.questions.length
+    const dimensionMismatchDetected = totalQuestionsWithDimensions === 0 && totalQuestions > 0
+
+    if (dimensionMismatchDetected) {
+      console.log('⚠️ DIMENSION ID MISMATCH DETECTED: Questions have dimensionId but none match quiz dimensions')
+      console.log('Attempting to fix using question order-based dimension assignment...')
+      
+      // Try to fix by assigning dimensions based on question order
+      const fixedDimensionScores = this.fixDimensionMismatch(quiz, answers)
+      if (Object.values(fixedDimensionScores).some(score => score > 0)) {
+        console.log('✅ Fixed dimension scores:', fixedDimensionScores)
+        Object.assign(dimensionScores, fixedDimensionScores)
+      }
+    }
+
     // Determine classification based on scoringLogic
     let classification = ''
     let feedback = ''
@@ -1154,9 +1468,32 @@ export class QuizService {
         const matches = scoringLogic.dimensions.every((dim: any) => {
           const score = dimensionScores[dim.name]
           if (typeof score === 'undefined') return false
-          if (dim.value === 'low') return score <= dim.threshold
-          if (dim.value === 'high') return score > dim.threshold
+          
+          // Fix the threshold logic for MBTI
+          if (dim.value === 'low') {
+            return score <= dim.threshold
+          } else if (dim.value === 'high') {
+            return score > dim.threshold
+          }
           return false
+        })
+
+        // Debug logging for threshold matching
+        console.log(`Checking criteria ${criteria.name}:`, {
+          scoringLogic: scoringLogic.dimensions.map((dim: any) => ({
+            name: dim.name,
+            value: dim.value,
+            threshold: dim.threshold,
+            actualScore: dimensionScores[dim.name],
+            matches: (() => {
+              const score = dimensionScores[dim.name]
+              if (typeof score === 'undefined') return false
+              if (dim.value === 'low') return score <= dim.threshold
+              if (dim.value === 'high') return score > dim.threshold
+              return false
+            })()
+          })),
+          overallMatch: matches
         })
 
         if (matches) {
@@ -1211,13 +1548,31 @@ export class QuizService {
       }
     }
 
-    // Fallback if no criteria match
+    // Fallback if no criteria match - provide more helpful feedback
     if (!classification) {
-      classification = 'Unknown'
-      feedback = 'Unable to determine a specific classification based on your answers.'
-      recommendations = ['Review your answers', 'Consider retaking the quiz']
-      areasOfImprovement = ['Clarity in responses']
-      supportNeeded = ['Additional guidance']
+      // For MBTI, provide partial classification based on individual dimensions
+      if (quiz.category === 'Personal Growth' && quiz.tags?.includes('MBTI')) {
+        const partialType = this.generatePartialMBTI(dimensionScores, quiz.dimensions)
+        classification = partialType || 'Unknown'
+        
+        if (dimensionMismatchDetected) {
+          feedback = `⚠️ Quiz data structure issue detected. Partial classification: ${partialType || 'Incomplete'}. This may be due to a technical issue with the quiz configuration.`
+          recommendations = ['Contact support to fix quiz configuration', 'Consider retaking the quiz later', 'Check if this is a known issue']
+          areasOfImprovement = ['Quiz data integrity', 'Technical configuration']
+          supportNeeded = ['Technical support', 'Quiz data repair']
+        } else {
+          feedback = `Unable to determine a complete MBTI type. Partial classification: ${partialType || 'Incomplete'}. This may be due to balanced scores or incomplete responses.`
+          recommendations = ['Review your answers for consistency', 'Consider retaking the quiz', 'Focus on your natural preferences rather than learned behaviors']
+          areasOfImprovement = ['Clarity in responses', 'Consistency in preferences']
+          supportNeeded = ['Additional guidance', 'MBTI interpretation resources']
+        }
+      } else {
+        classification = 'Unknown'
+        feedback = 'Unable to determine a specific classification based on your answers.'
+        recommendations = ['Review your answers', 'Consider retaking the quiz']
+        areasOfImprovement = ['Clarity in responses']
+        supportNeeded = ['Additional guidance']
+      }
     }
 
     return {
@@ -1237,6 +1592,63 @@ export class QuizService {
       proposedBlogPosts,
       color
     }
+  }
+
+  // Helper method to fix dimension ID mismatches
+  private fixDimensionMismatch(quiz: any, answers: any[]): Record<string, number> {
+    const fixedScores: Record<string, number> = {}
+    
+    // Initialize scores
+    for (const dim of quiz.dimensions) {
+      fixedScores[dim.shortName] = 0
+    }
+    
+    // Sort questions by order and assign dimensions based on position
+    const sortedQuestions = [...quiz.questions].sort((a, b) => a.order - b.order)
+    const questionsPerDimension = Math.ceil(sortedQuestions.length / quiz.dimensions.length)
+    
+    for (let i = 0; i < sortedQuestions.length; i++) {
+      const question = sortedQuestions[i]
+      const dimensionIndex = Math.floor(i / questionsPerDimension)
+      const dimension = quiz.dimensions[dimensionIndex]
+      
+      if (dimension && question) {
+        // Find the answer for this question
+        const answer = answers.find(a => a.questionId === question.id)
+        if (answer) {
+          const option = question.options.find((o: any) => o.id === answer.optionId)
+          if (option) {
+            fixedScores[dimension.shortName] += option.value
+          }
+        }
+      }
+    }
+    
+    return fixedScores
+  }
+
+  // Helper method to generate partial MBTI classification
+  private generatePartialMBTI(dimensionScores: Record<string, number>, dimensions: any[]): string {
+    let partialType = ''
+    
+    for (const dim of dimensions) {
+      const score = dimensionScores[dim.shortName]
+      if (typeof score !== 'undefined') {
+        if (dim.shortName === 'E/I') {
+          partialType += score <= (dim.threshold || 15) ? 'I' : 'E'
+        } else if (dim.shortName === 'S/N') {
+          partialType += score <= (dim.threshold || 20) ? 'N' : 'S'
+        } else if (dim.shortName === 'T/F') {
+          partialType += score <= (dim.threshold || 5) ? 'F' : 'T'
+        } else if (dim.shortName === 'J/P') {
+          partialType += score <= (dim.threshold || 5) ? 'P' : 'J'
+        }
+      } else {
+        partialType += '?'
+      }
+    }
+    
+    return partialType.length === 4 ? partialType : partialType + '?'.repeat(4 - partialType.length)
   }
 
   private async updateQuizStatistics(quizId: string): Promise<void> {
@@ -1468,6 +1880,298 @@ export class QuizService {
         isValid: false,
         issues: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
         warnings: []
+      }
+    }
+  }
+
+  // Validate quiz data before creation/update
+  private validateQuizDataBeforeCreation(data: CreateQuizData): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    // Basic validation
+    if (!data.title?.trim()) errors.push('Quiz title is required')
+    if (!data.description?.trim()) errors.push('Quiz description is required')
+    if (!data.category?.trim()) errors.push('Quiz category is required')
+    
+    // Questions validation
+    if (!data.questions || data.questions.length === 0) {
+      errors.push('At least one question is required')
+    } else {
+      data.questions.forEach((q, index) => {
+        if (!q.text?.trim()) errors.push(`Question ${index + 1} text is required`)
+        if (!q.options || q.options.length < 2) {
+          errors.push(`Question ${index + 1} must have at least 2 options`)
+        }
+        
+        // For complex quizzes, validate dimension assignment
+        if (data.quizType === QuizType.COMPLEX) {
+          if (!q.dimensionId) {
+            errors.push(`Question ${index + 1} must be assigned to a dimension`)
+          }
+        }
+      })
+    }
+    
+    // Dimensions validation for complex quizzes
+    if (data.quizType === QuizType.COMPLEX) {
+      if (!data.dimensions || data.dimensions.length === 0) {
+        errors.push('Complex quizzes must have at least one dimension')
+      } else {
+        data.dimensions.forEach((dim, index) => {
+          if (!dim.name?.trim()) errors.push(`Dimension ${index + 1} name is required`)
+          if (!dim.shortName?.trim()) errors.push(`Dimension ${index + 1} short name is required`)
+          if (dim.minScore === undefined || dim.maxScore === undefined) {
+            errors.push(`Dimension ${index + 1} must have score range defined`)
+          }
+          if (dim.threshold === undefined) {
+            errors.push(`Dimension ${index + 1} must have threshold defined`)
+          }
+        })
+        
+        // Validate that all questions are assigned to valid dimensions
+        if (data.questions && data.dimensions) {
+          const validDimensionIds = data.dimensions.map(d => d.id || `temp_${d.shortName}`)
+          const unassignedQuestions = data.questions.filter(q => !q.dimensionId || !validDimensionIds.includes(q.dimensionId))
+          if (unassignedQuestions.length > 0) {
+            errors.push(`${unassignedQuestions.length} questions are not properly assigned to dimensions`)
+          }
+        }
+      }
+      
+      // Validate complex grading criteria
+      if (!data.complexGradingCriteria || data.complexGradingCriteria.length === 0) {
+        errors.push('Complex quizzes must have grading criteria defined')
+      }
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  // Validate basic quiz data
+  private validateBasicQuizData(data: any): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    if (!data.title?.trim()) errors.push('Quiz title is required')
+    if (!data.description?.trim()) errors.push('Quiz description is required')
+    if (!data.category?.trim()) errors.push('Quiz category is required')
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  // Validate dimensions
+  private validateDimensions(dimensions: any[]): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    if (!dimensions || dimensions.length === 0) {
+      errors.push('At least one dimension is required')
+    } else {
+      dimensions.forEach((dim, index) => {
+        if (!dim.name?.trim()) errors.push(`Dimension ${index + 1} name is required`)
+        if (!dim.shortName?.trim()) errors.push(`Dimension ${index + 1} short name is required`)
+        if (dim.minScore === undefined || dim.maxScore === undefined) {
+          errors.push(`Dimension ${index + 1} must have score range defined`)
+        }
+        if (dim.threshold === undefined) {
+          errors.push(`Dimension ${index + 1} must have threshold defined`)
+        }
+      })
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  // Validate questions
+  private validateQuestions(questions: any[], quizType: QuizType, dimensions: any[]): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    if (!questions || questions.length === 0) {
+      errors.push('At least one question is required')
+    } else {
+      questions.forEach((q, index) => {
+        if (!q.text?.trim()) errors.push(`Question ${index + 1} text is required`)
+        if (!q.options || q.options.length < 2) {
+          errors.push(`Question ${index + 1} must have at least 2 options`)
+        }
+        
+        // For complex quizzes, validate dimension assignment
+        if (quizType === QuizType.COMPLEX) {
+          if (!q.dimensionId) {
+            errors.push(`Question ${index + 1} must be assigned to a dimension`)
+          } else {
+            const dimensionExists = dimensions.some(d => d.id === q.dimensionId)
+            if (!dimensionExists) {
+              errors.push(`Question ${index + 1} references invalid dimension ID: ${q.dimensionId}`)
+            }
+          }
+        }
+      })
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  // Debug method to troubleshoot quiz scoring issues
+  async debugQuizScoring(quizId: string, answers: any[]): Promise<{
+    quizStructure: any;
+    dimensionMapping: any;
+    scoreCalculation: any;
+    classificationAttempts: any;
+    issues: string[];
+  }> {
+    const issues: string[] = []
+    
+    try {
+      const quiz = await prisma.quiz.findUnique({
+        where: { id: quizId },
+        include: {
+          questions: {
+            include: {
+              options: true,
+              dimension: true
+            }
+          },
+          dimensions: true,
+          complexGradingCriteria: true
+        }
+      })
+
+      if (!quiz) {
+        throw new Error("Quiz not found")
+      }
+
+      // Analyze quiz structure
+      const quizStructure = {
+        id: quiz.id,
+        quizType: quiz.quizType,
+        category: quiz.category,
+        tags: quiz.tags,
+        dimensionsCount: quiz.dimensions?.length || 0,
+        questionsCount: quiz.questions?.length || 0,
+        criteriaCount: quiz.complexGradingCriteria?.length || 0
+      }
+
+      // Analyze dimension mapping
+      const dimensionMapping = quiz.dimensions?.map((dim: any) => ({
+        id: dim.id,
+        name: dim.name,
+        shortName: dim.shortName,
+        threshold: dim.threshold,
+        minScore: dim.minScore,
+        maxScore: dim.maxScore,
+        questionsCount: quiz.questions?.filter((q: any) => q.dimensionId === dim.id).length || 0
+      })) || []
+
+      // Calculate scores manually
+      const dimensionScores: Record<string, number> = {}
+      for (const dim of quiz.dimensions || []) {
+        dimensionScores[dim.shortName] = 0
+        const dimQuestions = quiz.questions?.filter((q: any) => q.dimensionId === dim.id) || []
+        
+        for (const answer of answers) {
+          const question = dimQuestions.find((q: any) => q.id === answer.questionId)
+          if (question) {
+            const option = question.options?.find((o: any) => o.id === answer.optionId)
+            if (option) {
+              dimensionScores[dim.shortName] += option.value
+            }
+          }
+        }
+      }
+
+      const scoreCalculation = {
+        dimensionScores,
+        answersProcessed: answers.length,
+        totalQuestions: quiz.questions?.length || 0
+      }
+
+      // Test classification logic
+      const classificationAttempts = quiz.complexGradingCriteria?.map((criteria: any) => {
+        const { scoringLogic } = criteria
+        if (scoringLogic && typeof scoringLogic === 'object' && scoringLogic.type === 'threshold' && scoringLogic.dimensions) {
+          const matches = scoringLogic.dimensions.every((dim: any) => {
+            const score = dimensionScores[dim.name]
+            if (typeof score === 'undefined') return false
+            
+            if (dim.value === 'low') {
+              return score <= dim.threshold
+            } else if (dim.value === 'high') {
+              return score > dim.threshold
+            }
+            return false
+          })
+
+          return {
+            criteriaName: criteria.name,
+            scoringLogic: scoringLogic.dimensions.map((dim: any) => ({
+              name: dim.name,
+              value: dim.value,
+              threshold: dim.threshold,
+              actualScore: dimensionScores[dim.name],
+              matches: (() => {
+                const score = dimensionScores[dim.name]
+                if (typeof score === 'undefined') return false
+                if (dim.value === 'low') return score <= dim.threshold
+                if (dim.value === 'high') return score > dim.threshold
+                return false
+              })()
+            })),
+            overallMatch: matches
+          }
+        }
+        return { criteriaName: criteria.name, scoringLogic: 'Not threshold type' }
+      }) || []
+
+      // Identify potential issues
+      if (quiz.dimensions && quiz.dimensions.length === 0) {
+        issues.push("No dimensions defined for complex quiz")
+      }
+
+      if (quiz.complexGradingCriteria && quiz.complexGradingCriteria.length === 0) {
+        issues.push("No complex grading criteria defined")
+      }
+
+      for (const dim of quiz.dimensions || []) {
+        if (!dim.threshold) {
+          issues.push(`Dimension ${dim.shortName} missing threshold value`)
+        }
+        if (dim.minScore === undefined || dim.maxScore === undefined) {
+          issues.push(`Dimension ${dim.shortName} missing score range`)
+        }
+      }
+
+      for (const criteria of quiz.complexGradingCriteria || []) {
+        if (!criteria.scoringLogic || typeof criteria.scoringLogic !== 'object' || !('type' in criteria.scoringLogic)) {
+          issues.push(`Criteria ${criteria.name} missing or invalid scoring logic`)
+        }
+      }
+
+      return {
+        quizStructure,
+        dimensionMapping,
+        scoreCalculation,
+        classificationAttempts,
+        issues
+      }
+    } catch (error) {
+      console.error(`Error debugging quiz scoring for ${quizId}:`, error)
+      return {
+        quizStructure: {},
+        dimensionMapping: [],
+        scoreCalculation: {},
+        classificationAttempts: [],
+        issues: [`Debug error: ${error instanceof Error ? error.message : 'Unknown error'}`]
       }
     }
   }

@@ -29,6 +29,13 @@ router.use(authenticate as RequestHandler)
 
 // Quiz Management (Admin/Instructor only)
 router.post("/quizzes", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizSchema }), quizController.createQuiz as RequestHandler)
+
+// Progressive Quiz Creation Routes
+router.post("/quizzes/basic", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizSchema }), quizController.createQuizBasic as RequestHandler)
+router.put("/quizzes/:id/dimensions", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizDimensions as RequestHandler)
+router.put("/quizzes/:id/questions", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizQuestions as RequestHandler)
+router.put("/quizzes/:id/grading", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizGradingCriteria as RequestHandler)
+
 router.get("/quizzes", validate({ query: quizQuerySchema }), quizController.getQuizzes as RequestHandler)
 router.get("/quizzes/:id", quizController.getQuizById as RequestHandler)
 router.put("/quizzes/:id", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizUpdateSchema }), quizController.updateQuiz as RequestHandler)

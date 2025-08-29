@@ -37,6 +37,149 @@ export class QuizController {
     }
   }
 
+  // Progressive Quiz Creation - Step 1: Basic Information
+  async createQuizBasic(req: AuthenticatedRequest, res: Response) {
+    try {
+      const validatedData = quizSchema.parse(req.body);
+      const createdBy = req.user?.userId;
+
+      if (!createdBy) {
+        return res.status(401).json({ 
+          success: false,
+          error: "AUTHENTICATION_ERROR",
+          message: "Unauthorized" 
+        })
+      }
+
+      const quiz = await quizService.createQuizBasic(validatedData, createdBy)
+      return res.status(201).json({
+        success: true,
+        message: "Basic quiz information created successfully",
+        data: quiz
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
+  // Progressive Quiz Creation - Step 2: Add Dimensions
+  async addQuizDimensions(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { dimensions } = req.body;
+      const updatedBy = req.user?.userId;
+
+      if (!id) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Quiz ID is required" 
+        })
+      }
+
+      if (!updatedBy) {
+        return res.status(401).json({ 
+          success: false,
+          error: "AUTHENTICATION_ERROR",
+          message: "Unauthorized" 
+        })
+      }
+
+      if (!dimensions || !Array.isArray(dimensions)) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Dimensions array is required" 
+        })
+      }
+
+      const quiz = await quizService.addQuizDimensions(id, dimensions, updatedBy)
+      return res.json({
+        success: true,
+        message: "Quiz dimensions added successfully",
+        data: quiz
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
+  // Progressive Quiz Creation - Step 3: Add Questions
+  async addQuizQuestions(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { questions } = req.body;
+      const updatedBy = req.user?.userId;
+
+      if (!id) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Quiz ID is required" 
+        })
+      }
+
+      if (!updatedBy) {
+        return res.status(401).json({ 
+          success: false,
+          error: "AUTHENTICATION_ERROR",
+          message: "Unauthorized" 
+        })
+      }
+
+      if (!questions || !Array.isArray(questions)) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Questions array is required" 
+        })
+      }
+
+      const quiz = await quizService.addQuizQuestions(id, questions, updatedBy)
+      return res.json({
+        success: true,
+        message: "Quiz questions added successfully",
+        data: quiz
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
+  // Progressive Quiz Creation - Step 4: Add Grading Criteria
+  async addQuizGradingCriteria(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const gradingData = req.body;
+      const updatedBy = req.user?.userId;
+
+      if (!id) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Quiz ID is required" 
+        })
+      }
+
+      if (!updatedBy) {
+        return res.status(401).json({ 
+          success: false,
+          error: "AUTHENTICATION_ERROR",
+          message: "Unauthorized" 
+        })
+      }
+
+      const quiz = await quizService.addQuizGradingCriteria(id, gradingData, updatedBy)
+      return res.json({
+        success: true,
+        message: "Quiz grading criteria added successfully",
+        data: quiz
+      })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
   async getQuizzes(req: Request, res: Response) {
     try {
       const query = (req as any).validatedQuery || quizQuerySchema.parse(req.query)
