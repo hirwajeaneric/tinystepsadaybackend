@@ -1417,7 +1417,7 @@ export class QuizService {
       const question = quiz.questions.find((q: any) => q.id === answer.questionId)
       if (question && question.dimensionId) {
         const option = question.options.find((o: any) => o.id === answer.optionId)
-        if (option) {
+        if (option && typeof option.value === 'number') {
           const dimension = quiz.dimensions.find((d: any) => d.id === question.dimensionId)
           if (dimension) {
             dimensionScores[dimension.shortName] = (dimensionScores[dimension.shortName] || 0) + option.value
@@ -1617,7 +1617,7 @@ export class QuizService {
         const answer = answers.find(a => a.questionId === question.id)
         if (answer) {
           const option = question.options.find((o: any) => o.id === answer.optionId)
-          if (option) {
+          if (option && typeof option.value === 'number') {
             fixedScores[dimension.shortName] += option.value
           }
         }
@@ -1930,8 +1930,8 @@ export class QuizService {
         
         // Validate that all questions are assigned to valid dimensions
         if (data.questions && data.dimensions) {
-          const validDimensionIds = data.dimensions.map(d => d.id || `temp_${d.shortName}`)
-          const unassignedQuestions = data.questions.filter(q => !q.dimensionId || !validDimensionIds.includes(q.dimensionId))
+          const validDimensionShortNames = data.dimensions.map(d => d.shortName)
+          const unassignedQuestions = data.questions.filter(q => !q.dimensionId || !validDimensionShortNames.includes(q.dimensionId))
           if (unassignedQuestions.length > 0) {
             errors.push(`${unassignedQuestions.length} questions are not properly assigned to dimensions`)
           }
@@ -2083,7 +2083,7 @@ export class QuizService {
           const question = dimQuestions.find((q: any) => q.id === answer.questionId)
           if (question) {
             const option = question.options?.find((o: any) => o.id === answer.optionId)
-            if (option) {
+            if (option?.value !== undefined) {
               dimensionScores[dim.shortName] += option.value
             }
           }
