@@ -87,13 +87,11 @@ export class QuizService {
 
       // Step 3: Add questions with proper dimension references
       const questionsWithDimensions = questions.map((question, index) => {
-        // For complex quizzes, ensure proper dimension assignment
+        // Only use order-based mapping if dimensionId is explicitly undefined/null
         let dimensionId = question.dimensionId
-
-        // If no dimensionId provided, assign based on question order
-        if (!dimensionId) {
-          const dimensionIndex = Math.floor(index / Math.ceil(questions.length / quiz.dimensions.length))
-          dimensionId = dimensionMap.get(dimensionIndex)
+        if (dimensionId === undefined || dimensionId === null) {
+          // Fall back to order-based mapping only when no dimensionId provided
+          dimensionId = dimensionMap.get(question.order)
         }
 
         // Validate that the dimensionId exists
@@ -101,6 +99,14 @@ export class QuizService {
           throw new ValidationError(
             `Question ${index + 1} has invalid dimensionId: ${dimensionId}`,
             "INVALID_DIMENSION_ID"
+          )
+        }
+
+        // Validate that the dimension object matches the dimensionId if provided
+        if (question.dimension && question.dimension.id !== dimensionId) {
+          throw new ValidationError(
+            `Question ${index + 1} has mismatched dimension: dimension.id (${question.dimension.id}) != dimensionId (${dimensionId})`,
+            "DIMENSION_MISMATCH"
           )
         }
 
@@ -359,18 +365,28 @@ export class QuizService {
       where: { id: quizId },
       data: {
         questions: {
-          create: questions.map((question, index) => ({
-            text: question.text,
-            order: question.order || index,
-            dimensionId: question.dimensionId, // This should now be valid
-            options: {
-              create: question.options.map((option: any, optionIndex: number) => ({
-                text: option.text,
-                value: option.value,
-                order: option.order || optionIndex
-              }))
+          create: questions.map((question, index) => {
+            // Validate that the dimension object matches the dimensionId if provided
+            if (question.dimension && question.dimension.id !== question.dimensionId) {
+              throw new ValidationError(
+                `Question ${index + 1} has mismatched dimension: dimension.id (${question.dimension.id}) != dimensionId (${question.dimensionId})`,
+                "DIMENSION_MISMATCH"
+              )
             }
-          }))
+
+            return {
+              text: question.text,
+              order: question.order || index,
+              dimensionId: question.dimensionId, // This should now be valid
+              options: {
+                create: question.options.map((option: any, optionIndex: number) => ({
+                  text: option.text,
+                  value: option.value,
+                  order: option.order || optionIndex
+                }))
+              }
+            }
+          })
         }
       },
       include: {
@@ -816,6 +832,22 @@ export class QuizService {
         if (dimensionId === undefined || dimensionId === null) {
           // Fall back to order-based mapping only when no dimensionId provided
           dimensionId = dimensionMap.get(question.order)
+        }
+
+        // Validate that the dimensionId exists
+        if (!dimensionId || !dimensionMap.has(quiz.dimensions.find(d => d.id === dimensionId)?.order || -1)) {
+          throw new ValidationError(
+            `Question ${index + 1} has invalid dimensionId: ${dimensionId}`,
+            "INVALID_DIMENSION_ID"
+          )
+        }
+
+        // Validate that the dimension object matches the dimensionId if provided
+        if (question.dimension && question.dimension.id !== dimensionId) {
+          throw new ValidationError(
+            `Question ${index + 1} has mismatched dimension: dimension.id (${question.dimension.id}) != dimensionId (${dimensionId})`,
+            "DIMENSION_MISMATCH"
+          )
         }
 
         return {

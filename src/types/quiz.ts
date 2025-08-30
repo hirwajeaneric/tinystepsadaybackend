@@ -191,6 +191,17 @@ export interface CreateQuizData {
     text: string
     order: number
     dimensionId?: string
+    dimension?: {
+      id: string
+      name: string
+      shortName: string
+      order: number
+      minScore: number
+      maxScore: number
+      threshold?: number
+      lowLabel?: string
+      highLabel?: string
+    }
     options: Array<{
       text: string
       value: number
@@ -263,6 +274,17 @@ export interface UpdateQuizData {
     text: string
     order: number
     dimensionId?: string
+    dimension?: {
+      id: string
+      name: string
+      shortName: string
+      order: number
+      minScore: number
+      maxScore: number
+      threshold?: number
+      lowLabel?: string
+      highLabel?: string
+    }
     options: Array<{
       text: string
       value: number
