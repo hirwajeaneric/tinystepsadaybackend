@@ -5,6 +5,7 @@ import { validate } from "../middleware/validation"
 import { UserRole } from "@prisma/client"
 import { 
   quizSchema, 
+  quizBasicSchema,
   quizUpdateSchema,
   quizQuerySchema,
   publicQuizQuerySchema,
@@ -31,15 +32,16 @@ router.use(authenticate as RequestHandler)
 router.post("/quizzes", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizSchema }), quizController.createQuiz as RequestHandler)
 
 // Progressive Quiz Creation Routes
-router.post("/quizzes/basic", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizSchema }), quizController.createQuizBasic as RequestHandler)
-router.put("/quizzes/:id/dimensions", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizDimensions as RequestHandler)
-router.put("/quizzes/:id/questions", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizQuestions as RequestHandler)
-router.put("/quizzes/:id/grading", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizGradingCriteria as RequestHandler)
+router.post("/quizzes/basic", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizBasicSchema }), quizController.createQuizBasic as RequestHandler)
+router.put("/quizzes/basic/:id", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizBasicSchema }), quizController.updateQuizBasic as RequestHandler)
+router.put("/quizzes/:id/dimensions", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizDimensions as RequestHandler)
+router.put("/quizzes/:id/questions", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizQuestions as RequestHandler)
+router.put("/quizzes/:id/grading", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.addQuizGradingCriteria as RequestHandler)
 
 router.get("/quizzes", validate({ query: quizQuerySchema }), quizController.getQuizzes as RequestHandler)
 router.get("/quizzes/:id", quizController.getQuizById as RequestHandler)
-router.put("/quizzes/:id", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizUpdateSchema }), quizController.updateQuiz as RequestHandler)
-router.delete("/quizzes/:id", authorize(UserRole.ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.deleteQuiz as RequestHandler)
+router.put("/quizzes/:id", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, validate({ body: quizUpdateSchema }), quizController.updateQuiz as RequestHandler)
+router.delete("/quizzes/:id", authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.INSTRUCTOR) as RequestHandler, quizController.deleteQuiz as RequestHandler)
 
 // Quiz Analytics (Quiz creators only)
 router.get("/quizzes/:id/analytics", quizController.getQuizAnalytics as RequestHandler)

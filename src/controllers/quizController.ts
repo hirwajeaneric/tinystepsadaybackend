@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import { QuizService } from "../services/quizService"
 import { 
   quizSchema, 
+  quizBasicSchema,
   quizUpdateSchema,
   quizQuerySchema,
   quizSubmissionSchema,
@@ -40,7 +41,7 @@ export class QuizController {
   // Progressive Quiz Creation - Step 1: Basic Information
   async createQuizBasic(req: AuthenticatedRequest, res: Response) {
     try {
-      const validatedData = quizSchema.parse(req.body);
+      const validatedData = quizBasicSchema.parse(req.body);
       const createdBy = req.user?.userId;
 
       if (!createdBy) {
@@ -57,6 +58,40 @@ export class QuizController {
         message: "Basic quiz information created successfully",
         data: quiz
       })
+    } catch (error) {
+      return handleError(error, res)
+    }
+  }
+
+  // Update Quiz Basic Information (for existing quizzes)
+  async updateQuizBasic(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const validatedData = quizBasicSchema.parse(req.body);
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false,
+          error: "AUTHENTICATION_ERROR",
+          message: "Unauthorized" 
+        })
+      }
+
+      if (!id) {
+        return res.status(400).json({ 
+          success: false,
+          error: "VALIDATION_ERROR",
+          message: "Quiz ID is required for updates" 
+        })
+      }
+
+      const quiz = await quizService.updateQuizBasic(id, validatedData, userId);
+      return res.json({
+        success: true,
+        message: "Basic quiz information updated successfully",
+        data: quiz
+      });
     } catch (error) {
       return handleError(error, res)
     }

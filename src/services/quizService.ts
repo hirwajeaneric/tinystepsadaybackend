@@ -4,6 +4,7 @@ import type {
   Quiz,
   UpdateQuizData,
   CreateQuizData,
+  CreateQuizBasicData,
   QuizQuery,
   QuizResult,
   QuizResultQuery,
@@ -219,11 +220,10 @@ export class QuizService {
   }
 
   // Progressive quiz creation - create quiz with basic info first
-  async createQuizBasic(data: CreateQuizData, createdBy: string): Promise<Quiz> {
-    const { questions, gradingCriteria, complexGradingCriteria, dimensions, ...basicData } = data
+  async createQuizBasic(data: CreateQuizBasicData, createdBy: string): Promise<Quiz> {
 
     // Validate only basic information
-    const basicValidation = this.validateBasicQuizData(basicData)
+    const basicValidation = this.validateBasicQuizData(data)
     if (!basicValidation.isValid) {
       throw new ValidationError(
         `Basic quiz validation failed: ${basicValidation.errors.join(', ')}`,
@@ -234,8 +234,8 @@ export class QuizService {
     // Create quiz with only basic information
     const quiz = await prisma.quiz.create({
       data: {
-        ...basicData,
-        quizType: basicData.quizType || QuizType.DEFAULT,
+        ...data,
+        quizType: data.quizType || QuizType.DEFAULT,
         status: 'DRAFT',
         createdBy,
         // Don't create questions, dimensions, or grading criteria yet
@@ -244,6 +244,52 @@ export class QuizService {
         complexGradingCriteria: { create: [] },
         dimensions: { create: [] }
       },
+      include: {
+        questions: { include: { options: true } },
+        gradingCriteria: true,
+        complexGradingCriteria: true,
+        dimensions: true,
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    return this.formatQuiz(quiz)
+  }
+
+  // Update quiz basic information only
+  async updateQuizBasic(id: string, data: CreateQuizBasicData, updatedBy: string): Promise<Quiz> {
+    const existingQuiz = await prisma.quiz.findUnique({
+      where: { id },
+      select: { createdBy: true }
+    })
+
+    if (!existingQuiz) {
+      throw new NotFoundError("Quiz not found", "QUIZ_NOT_FOUND")
+    }
+
+    if (existingQuiz.createdBy !== updatedBy) {
+      throw new AuthorizationError("Unauthorized to update this quiz", "INSUFFICIENT_PERMISSIONS")
+    }
+
+    // Validate only basic information
+    const basicValidation = this.validateBasicQuizData(data)
+    if (!basicValidation.isValid) {
+      throw new ValidationError(
+        `Basic quiz validation failed: ${basicValidation.errors.join(', ')}`,
+        "QUIZ_BASIC_VALIDATION_FAILED"
+      )
+    }
+
+    const quiz = await prisma.quiz.update({
+      where: { id },
+      data: data,
       include: {
         questions: { include: { options: true } },
         gradingCriteria: true,

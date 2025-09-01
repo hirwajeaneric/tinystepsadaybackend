@@ -173,6 +173,22 @@ export interface QuizAnalytics {
   }
 }
 
+// Quiz Basic Information Interface (for progressive creation/updates)
+export interface CreateQuizBasicData {
+  quizType: QuizType
+  redirectAfterAnswer: RedirectType
+  title: string
+  subtitle?: string
+  description: string
+  coverImage?: string
+  category: string
+  estimatedTime: string
+  difficulty: QuizDifficulty
+  status: QuizStatus
+  isPublic: boolean
+  tags: string[]
+}
+
 // Quiz Creation Interface
 export interface CreateQuizData {
   quizType: QuizType
