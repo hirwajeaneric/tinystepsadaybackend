@@ -62,6 +62,7 @@ export class QuizService {
               proposedStreaks: criteria.proposedStreaks || [],
               proposedBlogPosts: criteria.proposedBlogPosts || [],
               description: criteria.description,
+              image: criteria.image,
               scoringLogic: criteria.scoringLogic
             })) || []
           }
@@ -190,7 +191,8 @@ export class QuizService {
               proposedProducts: criteria.proposedProducts,
               proposedStreaks: criteria.proposedStreaks,
               proposedBlogPosts: criteria.proposedBlogPosts,
-              description: criteria.description
+              description: criteria.description,
+              image: criteria.image
             })) || []
           }
         },
@@ -500,6 +502,7 @@ export class QuizService {
             proposedStreaks: criteria.proposedStreaks || [],
             proposedBlogPosts: criteria.proposedBlogPosts || [],
             description: criteria.description,
+            image: criteria.image,
             scoringLogic: criteria.scoringLogic
           }))
         }
@@ -518,7 +521,8 @@ export class QuizService {
             proposedProducts: criteria.proposedProducts,
             proposedStreaks: criteria.proposedStreaks || [],
             proposedBlogPosts: criteria.proposedBlogPosts || [],
-            description: criteria.description
+            description: criteria.description,
+            image: criteria.image
           }))
         }
       },
@@ -847,6 +851,7 @@ export class QuizService {
               proposedStreaks: criteria.proposedStreaks || [],
               proposedBlogPosts: criteria.proposedBlogPosts || [],
               description: criteria.description,
+              image: criteria.image,
               scoringLogic: criteria.scoringLogic
             })) || []
           }

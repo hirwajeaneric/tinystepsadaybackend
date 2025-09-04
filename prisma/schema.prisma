@@ -334,6 +334,7 @@ model GradingCriteria {
   proposedStreaks     Json[]   @default([])
   proposedBlogPosts   Json[]   @default([])
   description         String?
+  image               String?
   quizId              String   @db.ObjectId
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -348,6 +349,7 @@ model ComplexGradingCriteria {
   label               String   // e.g., "The Architect" for MBTI
   color               String
   description         String?
+  image               String?
   recommendations     String[]
   areasOfImprovement  String[] @default([])
   supportNeeded       String[] @default([])

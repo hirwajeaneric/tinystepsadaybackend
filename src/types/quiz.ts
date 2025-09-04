@@ -240,6 +240,7 @@ export interface CreateQuizData {
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
     proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
+    image?: string
   }>
   dimensions?: Array<{
     name: string
@@ -263,6 +264,7 @@ export interface CreateQuizData {
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
     proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
+    image?: string
     scoringLogic: {
       type: 'threshold' | 'highest' | 'topN'
       dimensions?: Array<{ name: string; value?: string; threshold?: number }>
@@ -323,6 +325,7 @@ export interface UpdateQuizData {
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
     proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
+    image?: string
   }>
   dimensions?: Array<{
     name: string
@@ -346,6 +349,7 @@ export interface UpdateQuizData {
     proposedStreaks: Array<{ id: string; name: string; slug: string }>
     proposedBlogPosts: Array<{ id: string; title: string; slug: string }>
     description?: string
+    image?: string
     scoringLogic: {
       type: 'threshold' | 'highest' | 'topN'
       dimensions?: Array<{ name: string; value?: string; threshold?: number }>
