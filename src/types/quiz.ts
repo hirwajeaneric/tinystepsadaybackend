@@ -39,6 +39,7 @@ export interface GradingCriteria {
   maxScore: number
   label: string
   color: string
+  image?: string
   recommendations: string[]
   areasOfImprovement?: string[]
   supportNeeded?: string[]
@@ -55,6 +56,7 @@ export interface ComplexGradingCriteria {
   name: string
   label: string
   color: string
+  image?: string
   recommendations: string[]
   areasOfImprovement?: string[]
   supportNeeded?: string[]
